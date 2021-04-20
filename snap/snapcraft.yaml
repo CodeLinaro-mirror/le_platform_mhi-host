@@ -223,6 +223,37 @@ parts:
         prime:
             - -*
 
+    optee-uc-fde-client:
+        after:
+            - optee-uc-fde
+            - optee-os
+            - optee-client
+        plugin: nil
+        source: ${SNAPCRAFT_STAGE}/optee-uc-fde
+        source-type: local
+        override-build: |
+            # we are not using TA build here (early TA is used), so
+            # it does not matter what key is used to sign built TA
+            # support cross build
+            export CROSS_COMPILE="${SNAPCRAFT_ARCH_TRIPLET}-"
+            export ARCH="${SNAPCRAFT_TARGET_ARCH}"
+            if [ "${SNAPCRAFT_TARGET_ARCH}" = "armhf" ]; then
+                echo "Building for armhf"
+                export ARCH="arm"
+            fi
+            export TA_DEV_KIT_DIR=${SNAPCRAFT_STAGE}/export-ta_arm
+            export OPTEE_CLIENT_EXPORT=${SNAPCRAFT_STAGE}/usr
+            export DESTDIR=${SNAPCRAFT_PART_INSTALL}
+            make O=${SNAPCRAFT_PART_BUILD}/out
+            make O=${SNAPCRAFT_PART_BUILD}/out install
+        organize:
+            usr/bin/fde-setup: meta/hooks/fde-setup
+        stage:
+            - meta/
+            - usr/bin/fde-reveal-key
+        prime:
+            - meta/
+
 build-packages:
     - bison
     - device-tree-compiler
