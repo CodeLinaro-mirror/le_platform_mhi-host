@@ -194,6 +194,26 @@ parts:
         prime:
             - -*
 
+    optee-client:
+        plugin: nil
+        source: https://git.launchpad.net/~ondrak/+git/optee-client
+        source-type: git
+        source-branch: release
+        override-build: |
+            export ARCH="${SNAPCRAFT_TARGET_ARCH}"
+            if [ "${SNAPCRAFT_TARGET_ARCH}" = "armhf" ]; then
+              export ARCH="arm"
+            fi
+            export DEBUG=0
+            export CROSS_COMPILE="${SNAPCRAFT_ARCH_TRIPLET}-"
+            export CFG_TEE_CLIENT_LOAD_PATH=""
+            export CFG_TA_TEST_PATH=0
+            export DESTDIR=${SNAPCRAFT_PART_INSTALL}
+            make O=${SNAPCRAFT_PART_BUILD}/out -j$(nproc)
+            make install O=${SNAPCRAFT_PART_BUILD}/out
+        prime:
+            - usr/lib/lib*so*
+
 build-packages:
     - bison
     - device-tree-compiler
