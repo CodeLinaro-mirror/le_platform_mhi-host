@@ -341,6 +341,19 @@ static int instantiate_rng(struct device *ctrldev, int state_handle_mask,
 }
 
 /*
+ * caam_reinstantiate_rng - reinstantiates RNG. Intended for a case when RNG falls into
+ *			    HW error condition. That happens if TRNG fails statistical
+ *			    check and RTY_CNT value set in RTSCMISC decrements to zero.
+ *			    It is exported to caamrng.c
+ * @ctrldev - pointer to device
+ */
+
+int caam_reinstantiate_rng(struct device *ctrldev)
+{
+	return instantiate_rng(ctrldev, 0, 0);
+}
+
+/*
  * kick_trng - sets the various parameters for enabling the initialization
  *	       of the RNG4 block in CAAM
  * @dev - pointer to the controller device

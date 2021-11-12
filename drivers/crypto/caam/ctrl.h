@@ -8,6 +8,8 @@
 #ifndef CTRL_H
 #define CTRL_H
 
+int caam_reinstantiate_rng(struct device *ctrldev);
+
 /* Prototypes for backend-level services exposed to APIs */
 extern bool caam_dpaa2;
 

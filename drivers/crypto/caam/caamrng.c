@@ -21,6 +21,7 @@
 #include "desc_constr.h"
 #include "jr.h"
 #include "error.h"
+#include "ctrl.h"
 
 #define CAAM_RNG_MAX_FIFO_STORE_SIZE	16
 
@@ -114,6 +115,35 @@ static int caam_rng_read_one(struct device *jrdev,
 	return err ?: (ret ?: len);
 }
 
+static void caam_rng_retry_reset(struct caam_rng_ctx *context)
+{
+	struct device *ctrldev = context->ctrldev;
+	struct caam_drv_private *ctrlpriv = dev_get_drvdata(ctrldev);
+	struct caam_ctrl __iomem *ctrl;
+	struct rng4tst __iomem *r4tst;
+	u32 __iomem *rtstatus;
+	u32 retry_count;
+
+	ctrl = (struct caam_ctrl __iomem *)ctrlpriv->ctrl;
+	r4tst = &ctrl->r4tst[0];
+
+	/*
+	 * There is unfortunately no member for RTSTATUS register in
+	 * struct rng4tst and the structure doesn't look stable
+	 */
+	rtstatus = (u32 *)((char *)&ctrl->r4tst[0] + 0x3C);
+	retry_count = (rd_reg32(rtstatus) >> 16) & 0xf;
+	dev_dbg(ctrldev, "CAAM RNG retry count %d\n", retry_count);
+	if (retry_count == 0) {
+		dev_err(ctrldev, "CAAM RNG resetting retry count to 1\n");
+		clrsetbits_32(&r4tst->rtmctl, 0, RTMCTL_PRGM | RTMCTL_ACC);
+		wr_reg32(&r4tst->rtscmisc, (rd_reg32(&r4tst->rtscmisc) & 0x7f) | (1 << 16));
+		clrsetbits_32(&r4tst->rtmctl, RTMCTL_PRGM | RTMCTL_ACC,
+				RTMCTL_SAMP_MODE_RAW_ES_SC);
+		caam_reinstantiate_rng(ctrldev);
+	}
+}
+
 static void caam_rng_fill_async(struct caam_rng_ctx *ctx)
 {
 	struct scatterlist sg[1];
@@ -130,8 +160,10 @@ static void caam_rng_fill_async(struct caam_rng_ctx *ctx)
 				sg[0].length,
 				ctx->desc_async,
 				&done);
-	if (len < 0)
+	if (len < 0) {
+		caam_rng_retry_reset(ctx);
 		return;
+	}
 
 	kfifo_dma_in_finish(&ctx->fifo, len);
 }
@@ -146,13 +178,17 @@ static void caam_rng_worker(struct work_struct *work)
 static int caam_read(struct hwrng *rng, void *dst, size_t max, bool wait)
 {
 	struct caam_rng_ctx *ctx = to_caam_rng_ctx(rng);
-	int out;
+	int out, ret;
 
 	if (wait) {
 		struct completion done;
 
-		return caam_rng_read_one(ctx->jrdev, dst, max,
+		ret = caam_rng_read_one(ctx->jrdev, dst, max,
 					 ctx->desc_sync, &done);
+		if (ret < 0)
+			caam_rng_retry_reset(ctx);
+
+		return ret;
 	}
 
 	out = kfifo_out(&ctx->fifo, dst, max);
