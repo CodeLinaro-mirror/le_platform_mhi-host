@@ -49,400 +49,171 @@ struct mhi_pci_dev_info {
 	bool auto_edl_load;
 };
 
-#define MHI_CHANNEL_CONFIG_UL(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_TO_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_AMSS),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
-	}						\
-
-#define MHI_CHANNEL_CONFIG_DL(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_FROM_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_AMSS),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
+#define MHI_CHANNEL_CONFIG_UL(ch_num, ch_name, elems, ev_ring, ee,	\
+			      dbmode, lpm, poll, offload, modeswitch,	\
+			      ch_type)					\
+	{								\
+		.dir = DMA_TO_DEVICE,					\
+		.num = ch_num,						\
+		.name = ch_name,					\
+		.num_elements = elems,					\
+		.event_ring = ev_ring,					\
+		.ee_mask = BIT(ee),					\
+		.pollcfg = poll,					\
+		.doorbell = dbmode,					\
+		.lpm_notify = lpm,					\
+		.offload_channel = offload,				\
+		.doorbell_mode_switch = modeswitch,			\
+		.wake_capable = false,					\
+		.auto_queue = false,					\
+		.local_elements = 0,					\
+		.type = ch_type,					\
 	}
 
-#define MHI_CHANNEL_CONFIG_DL_AUTOQUEUE(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_FROM_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_AMSS),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
-		.auto_queue = true,			\
+#define MHI_CHANNEL_CONFIG_DL(ch_num, ch_name, elems, ev_ring, ee,	\
+			      dbmode, lpm, poll, offload, modeswitch,	\
+			      wake, autoq, local_el, ch_type)		\
+	{								\
+		.dir = DMA_FROM_DEVICE,					\
+		.num = ch_num,						\
+		.name = ch_name,					\
+		.num_elements = elems,					\
+		.event_ring = ev_ring,					\
+		.ee_mask = BIT(ee),					\
+		.pollcfg = poll,					\
+		.doorbell = dbmode,					\
+		.lpm_notify = lpm,					\
+		.offload_channel = offload,				\
+		.doorbell_mode_switch = modeswitch,			\
+		.wake_capable = wake,					\
+		.auto_queue = autoq,					\
+		.local_elements = local_el,				\
+		.type = ch_type,					\
 	}
 
-#define MHI_EVENT_CONFIG_CTRL(ev_ring, el_count) \
-	{					\
-		.num_elements = el_count,	\
-		.irq_moderation_ms = 0,		\
-		.irq = (ev_ring) + 1,		\
-		.priority = 1,			\
-		.mode = MHI_DB_BRST_DISABLE,	\
-		.data_type = MHI_ER_CTRL,	\
-		.hardware_event = false,	\
-		.client_managed = false,	\
-		.offload_channel = false,	\
+#define MHI_EVENT_CONFIG(ev_ring, ev_irq, type, num_elems, int_mod,	\
+			 dbmode, hw, cl_manage, offload, ch_num)	\
+	{								\
+		.num_elements = num_elems,				\
+		.irq_moderation_ms = int_mod,				\
+		.irq = ev_irq,						\
+		.mode = dbmode,						\
+		.data_type = type,					\
+		.hardware_event = hw,					\
+		.client_managed = cl_manage,				\
+		.offload_channel = offload,				\
+		.channel = ch_num,					\
 	}
 
-#define MHI_CHANNEL_CONFIG_HW_UL(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_TO_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_AMSS),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_ENABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = true,		\
-	}						\
-
-#define MHI_CHANNEL_CONFIG_HW_DL(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_FROM_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_AMSS),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_ENABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = true,		\
-	}
-
-#define MHI_CHANNEL_CONFIG_UL_SBL(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_TO_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_SBL),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
-	}						\
-
-#define MHI_CHANNEL_CONFIG_DL_SBL(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_FROM_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_SBL),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
-	}
-
-#define MHI_CHANNEL_CONFIG_UL_FP(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_TO_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_FP),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
-	}						\
-
-#define MHI_CHANNEL_CONFIG_DL_FP(ch_num, ch_name, el_count, ev_ring) \
-	{						\
-		.num = ch_num,				\
-		.name = ch_name,			\
-		.num_elements = el_count,		\
-		.event_ring = ev_ring,			\
-		.dir = DMA_FROM_DEVICE,			\
-		.ee_mask = BIT(MHI_EE_FP),		\
-		.pollcfg = 0,				\
-		.doorbell = MHI_DB_BRST_DISABLE,	\
-		.lpm_notify = false,			\
-		.offload_channel = false,		\
-		.doorbell_mode_switch = false,		\
-	}
-
-#define MHI_EVENT_CONFIG_DATA(ev_ring, el_count) \
-	{					\
-		.num_elements = el_count,	\
-		.irq_moderation_ms = 0,		\
-		.irq = (ev_ring) + 1,		\
-		.priority = 1,			\
-		.mode = MHI_DB_BRST_DISABLE,	\
-		.data_type = MHI_ER_DATA,	\
-		.hardware_event = false,	\
-		.client_managed = false,	\
-		.offload_channel = false,	\
-	}
-
-#define MHI_EVENT_CONFIG_HW_DATA(ev_ring, el_count, ch_num, dbmode) \
-	{					\
-		.num_elements = el_count,	\
-		.irq_moderation_ms = 5,		\
-		.irq = (ev_ring) + 1,		\
-		.priority = 1,			\
-		.mode = dbmode,			\
-		.data_type = MHI_ER_DATA,	\
-		.hardware_event = true,		\
-		.client_managed = false,	\
-		.offload_channel = false,	\
-		.channel = ch_num,		\
-	}
-
-static const struct mhi_channel_config modem_qcom_v1_mhi_channels[] = {
-	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 32, 1),
-	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 32, 1),
-	MHI_CHANNEL_CONFIG_UL_SBL(2, "SAHARA", 64, 1),
-	MHI_CHANNEL_CONFIG_DL_SBL(3, "SAHARA", 64, 1),
-	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 16, 2),
-	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 16, 2),
-	MHI_CHANNEL_CONFIG_UL(8, "QDSS", 16, 2),
-	MHI_CHANNEL_CONFIG_DL(9, "QDSS", 16, 2),
-	MHI_CHANNEL_CONFIG_UL(12, "MBIM", 4, 0),
-	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 4, 0),
-	MHI_CHANNEL_CONFIG_UL(14, "QMI", 4, 0),
-	MHI_CHANNEL_CONFIG_DL(15, "QMI", 4, 0),
-	MHI_CHANNEL_CONFIG_UL(18, "IP_CTRL", 8, 1),
-	MHI_CHANNEL_CONFIG_DL(19, "IP_CTRL", 8, 1),
-	MHI_CHANNEL_CONFIG_UL(20, "IPCR", 32, 3),
-	MHI_CHANNEL_CONFIG_DL(21, "IPCR", 32, 3),
-	MHI_CHANNEL_CONFIG_UL(32, "DUN", 32, 3),
-	MHI_CHANNEL_CONFIG_DL(33, "DUN", 32, 3),
-	MHI_CHANNEL_CONFIG_UL_FP(34, "FIREHOSE", 32, 1),
-	MHI_CHANNEL_CONFIG_DL_FP(35, "FIREHOSE", 32, 1),
-	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 64, 1),
-	MHI_CHANNEL_CONFIG_DL(47, "IP_SW0", 64, 1),
-	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0", 512, 4),
-	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0", 512, 5),
-	MHI_CHANNEL_CONFIG_HW_DL(102, "IP_HW_ADPL", 128, 6),
+const struct mhi_channel_config modem_qcom_v1_mhi_lsn_channels[] = {
+	/* SBL channels  */
+	MHI_CHANNEL_CONFIG_UL(2, "SAHARA", 128, 1, MHI_EE_SBL,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(3, "SAHARA", 128, 1, MHI_EE_SBL,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_DL(25, "BL", 32, 1, MHI_EE_SBL,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	/* AMSS channels */
+	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 64, 2, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 64, 2, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 64, 3, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 64, 3, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(14, "NMEA", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(15, "NMEA", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(16, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(17, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	/* SW IP channels */
+	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 128, 5, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(47, "IP_SW0", 128, 5, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(50, "IP_SW2", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(51, "IP_SW2", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	/* HW channels */
+	MHI_CHANNEL_CONFIG_UL(104, "IP_HW0", 2048, 8, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(105, "IP_HW0", 2048, 9, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(106, "IP_HW1", 2048, 10, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(107, "IP_HW1", 2048, 11, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      false, false, 0, 0),
 };
 
-static struct mhi_event_config modem_qcom_v1_mhi_events[] = {
-	/* first ring is control+data ring */
-	MHI_EVENT_CONFIG_CTRL(0, 64),
-	MHI_EVENT_CONFIG_DATA(1, 256),
-	/* DIAG dedicated event ring */
-	MHI_EVENT_CONFIG_DATA(2, 64),
-	MHI_EVENT_CONFIG_DATA(3, 64),
-	/* Hardware channels request dedicated hardware event rings */
-	MHI_EVENT_CONFIG_HW_DATA(4, 1024, 100, MHI_DB_BRST_ENABLE),
-	MHI_EVENT_CONFIG_HW_DATA(5, 2048, 101, MHI_DB_BRST_ENABLE),
-	MHI_EVENT_CONFIG_HW_DATA(6, 1024, 102, MHI_DB_BRST_DISABLE),
+static struct mhi_event_config modem_qcom_v1_mhi_lsn_events[] = {
+	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(2, 3, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(3, 4, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(4, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(5, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(6, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(7, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(8, 7, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 104),
+	MHI_EVENT_CONFIG(9, 8, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 105),
+	MHI_EVENT_CONFIG(10, 9, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 106),
+	MHI_EVENT_CONFIG(11, 10, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 107),
 };
 
-static const struct mhi_controller_config modem_qcom_v1_mhiv_config = {
+static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_config = {
 	.max_channels = 128,
-	.timeout_ms = 15000,
-	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_channels),
-	.ch_cfg = modem_qcom_v1_mhi_channels,
-	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_events),
-	.event_cfg = modem_qcom_v1_mhi_events,
+	.timeout_ms = 120000,
+	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_channels),
+	.ch_cfg = modem_qcom_v1_mhi_lsn_channels,
+	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_events),
+	.event_cfg = modem_qcom_v1_mhi_lsn_events,
 };
 
-static const struct mhi_pci_dev_info mhi_qcom_sdx65_info = {
-	.name = "qcom-sdx65m",
-	.fw = "qcom/sdx65m/xbl.elf",
-	.edl = "qcom/sdx65m/edl.mbn",
-	.config = &modem_qcom_v1_mhiv_config,
+static const struct mhi_pci_dev_info mhi_qcom_lassen_info = {
+	.name = "qcom-lassen",
+	.fw = "qcom/lassen/xbl_s.melf",
+	.edl = "qcom/lassen/edl.mbn",
+	.config = &modem_qcom_v1_mhi_lsn_config,
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
 	.dma_data_width = 32,
 	.sideband_wake = false,
-};
-
-static const struct mhi_pci_dev_info mhi_qcom_sdx55_info = {
-	.name = "qcom-sdx55m",
-	.fw = "qcom/sdx55m/sbl1.mbn",
-	.edl = "qcom/sdx55m/edl.mbn",
-	.config = &modem_qcom_v1_mhiv_config,
-	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
-	.dma_data_width = 32,
-	.sideband_wake = false,
-};
-
-static const struct mhi_pci_dev_info mhi_qcom_sdx24_info = {
-	.name = "qcom-sdx24",
-	.edl = "qcom/prog_firehose_sdx24.mbn",
-	.config = &modem_qcom_v1_mhiv_config,
-	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
-	.dma_data_width = 32,
-	.sideband_wake = true,
-};
-
-static const struct mhi_channel_config mhi_quectel_em1xx_channels[] = {
-	MHI_CHANNEL_CONFIG_UL(0, "NMEA", 32, 0),
-	MHI_CHANNEL_CONFIG_DL(1, "NMEA", 32, 0),
-	MHI_CHANNEL_CONFIG_UL_SBL(2, "SAHARA", 32, 0),
-	MHI_CHANNEL_CONFIG_DL_SBL(3, "SAHARA", 32, 0),
-	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 32, 1),
-	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 32, 1),
-	MHI_CHANNEL_CONFIG_UL(12, "MBIM", 32, 0),
-	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 32, 0),
-	MHI_CHANNEL_CONFIG_UL(32, "DUN", 32, 0),
-	MHI_CHANNEL_CONFIG_DL(33, "DUN", 32, 0),
-	/* The EDL firmware is a flash-programmer exposing firehose protocol */
-	MHI_CHANNEL_CONFIG_UL_FP(34, "FIREHOSE", 32, 0),
-	MHI_CHANNEL_CONFIG_DL_FP(35, "FIREHOSE", 32, 0),
-	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0_MBIM", 128, 2),
-	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0_MBIM", 128, 3),
-};
-
-static struct mhi_event_config mhi_quectel_em1xx_events[] = {
-	MHI_EVENT_CONFIG_CTRL(0, 128),
-	MHI_EVENT_CONFIG_DATA(1, 128),
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100, MHI_DB_BRST_ENABLE),
-	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101, MHI_DB_BRST_ENABLE),
-};
-
-static const struct mhi_controller_config modem_quectel_em1xx_config = {
-	.max_channels = 128,
-	.timeout_ms = 20000,
-	.num_channels = ARRAY_SIZE(mhi_quectel_em1xx_channels),
-	.ch_cfg = mhi_quectel_em1xx_channels,
-	.num_events = ARRAY_SIZE(mhi_quectel_em1xx_events),
-	.event_cfg = mhi_quectel_em1xx_events,
-};
-
-static const struct mhi_pci_dev_info mhi_quectel_em1xx_info = {
-	.name = "quectel-em1xx",
-	.edl = "qcom/prog_firehose_sdx24.mbn",
-	.config = &modem_quectel_em1xx_config,
-	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
-	.dma_data_width = 32,
-	.sideband_wake = true,
-	.auto_edl_load = true,
-};
-
-static const struct mhi_channel_config mhi_foxconn_sdx55_channels[] = {
-	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 32, 0),
-	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 32, 0),
-	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 32, 1),
-	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 32, 1),
-	MHI_CHANNEL_CONFIG_UL(12, "MBIM", 32, 0),
-	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 32, 0),
-	MHI_CHANNEL_CONFIG_UL(32, "DUN", 32, 0),
-	MHI_CHANNEL_CONFIG_DL(33, "DUN", 32, 0),
-	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0_MBIM", 128, 2),
-	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0_MBIM", 128, 3),
-};
-
-static struct mhi_event_config mhi_foxconn_sdx55_events[] = {
-	MHI_EVENT_CONFIG_CTRL(0, 128),
-	MHI_EVENT_CONFIG_DATA(1, 128),
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100, MHI_DB_BRST_ENABLE),
-	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101, MHI_DB_BRST_ENABLE),
-};
-
-static const struct mhi_controller_config modem_foxconn_sdx55_config = {
-	.max_channels = 128,
-	.timeout_ms = 20000,
-	.num_channels = ARRAY_SIZE(mhi_foxconn_sdx55_channels),
-	.ch_cfg = mhi_foxconn_sdx55_channels,
-	.num_events = ARRAY_SIZE(mhi_foxconn_sdx55_events),
-	.event_cfg = mhi_foxconn_sdx55_events,
-};
-
-static const struct mhi_pci_dev_info mhi_foxconn_sdx55_info = {
-	.name = "foxconn-sdx55",
-	.fw = "qcom/sdx55m/sbl1.mbn",
-	.edl = "qcom/sdx55m/edl.mbn",
-	.config = &modem_foxconn_sdx55_config,
-	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
-	.dma_data_width = 32,
-	.sideband_wake = false,
-	.auto_edl_load = true,
-};
-
-static const struct mhi_channel_config mhi_mv31_channels[] = {
-	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 64, 0),
-	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 64, 0),
-	/* MBIM Control Channel */
-	MHI_CHANNEL_CONFIG_UL(12, "MBIM", 64, 0),
-	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 64, 0),
-	/* MBIM Data Channel */
-	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0_MBIM", 512, 2),
-	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0_MBIM", 512, 3),
-};
-
-static struct mhi_event_config mhi_mv31_events[] = {
-	MHI_EVENT_CONFIG_CTRL(0, 256),
-	MHI_EVENT_CONFIG_DATA(1, 256),
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100, MHI_DB_BRST_ENABLE),
-	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101, MHI_DB_BRST_ENABLE),
-};
-
-static const struct mhi_controller_config modem_mv31_config = {
-	.max_channels = 128,
-	.timeout_ms = 20000,
-	.num_channels = ARRAY_SIZE(mhi_mv31_channels),
-	.ch_cfg = mhi_mv31_channels,
-	.num_events = ARRAY_SIZE(mhi_mv31_events),
-	.event_cfg = mhi_mv31_events,
-};
-
-static const struct mhi_pci_dev_info mhi_mv31_info = {
-	.name = "cinterion-mv31",
-	.config = &modem_mv31_config,
-	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
-	.dma_data_width = 32,
-	.auto_edl_load = true,
 };
 
 static const struct pci_device_id mhi_pci_id_table[] = {
-	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, 0x0306),
-		.driver_data = (kernel_ulong_t) &mhi_qcom_sdx55_info },
-	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, 0x0304),
-		.driver_data = (kernel_ulong_t) &mhi_qcom_sdx24_info },
-	{ PCI_DEVICE(0x1eac, 0x1001), /* EM120R-GL (sdx24) */
-		.driver_data = (kernel_ulong_t) &mhi_quectel_em1xx_info },
-	{ PCI_DEVICE(0x1eac, 0x1002), /* EM160R-GL (sdx24) */
-		.driver_data = (kernel_ulong_t) &mhi_quectel_em1xx_info },
-	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, 0x0308),
-		.driver_data = (kernel_ulong_t) &mhi_qcom_sdx65_info },
-	/* T99W175 (sdx55), Both for eSIM and Non-eSIM */
-	{ PCI_DEVICE(PCI_VENDOR_ID_FOXCONN, 0xe0ab),
-		.driver_data = (kernel_ulong_t) &mhi_foxconn_sdx55_info },
-	/* DW5930e (sdx55), With eSIM, It's also T99W175 */
-	{ PCI_DEVICE(PCI_VENDOR_ID_FOXCONN, 0xe0b0),
-		.driver_data = (kernel_ulong_t) &mhi_foxconn_sdx55_info },
-	/* DW5930e (sdx55), Non-eSIM, It's also T99W175 */
-	{ PCI_DEVICE(PCI_VENDOR_ID_FOXCONN, 0xe0b1),
-		.driver_data = (kernel_ulong_t) &mhi_foxconn_sdx55_info },
+	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, 0x0600),
+		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_info },
 	{  }
 };
 MODULE_DEVICE_TABLE(pci, mhi_pci_id_table);
