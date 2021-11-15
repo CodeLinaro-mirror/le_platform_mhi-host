@@ -392,8 +392,9 @@ extern const char * const mhi_ee_str[MHI_EE_MAX];
 			ee == MHI_EE_EDL)
 #define MHI_IN_MISSION_MODE(ee) (ee == MHI_EE_AMSS || ee == MHI_EE_WFW || \
 				 ee == MHI_EE_FP)
-#define MHI_POWER_UP_CAPABLE(ee) (MHI_IN_PBL(ee) || ee == MHI_EE_AMSS)
 #define MHI_FW_LOAD_CAPABLE(ee) (ee == MHI_EE_PBL || ee == MHI_EE_EDL)
+#define MHI_VALID_POWER_UP(ee) (MHI_IN_MISSION_MODE(ee) || ee == MHI_EE_EDL || \
+				(ee == MHI_EE_SBL && !mhi_cntrl->fbc_download))
 
 enum dev_st_transition {
 	DEV_ST_TRANSITION_PBL,

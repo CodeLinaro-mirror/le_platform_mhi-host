@@ -1090,17 +1090,9 @@ int mhi_async_power_up(struct mhi_controller *mhi_cntrl)
 	current_ee = mhi_get_exec_env(mhi_cntrl);
 	write_unlock_irq(&mhi_cntrl->pm_lock);
 
-	/* Confirm that the device is in valid exec env */
-	if (!MHI_POWER_UP_CAPABLE(current_ee)) {
-		dev_err(dev, "%s is not a valid EE for power on\n",
-			TO_MHI_EXEC_STR(current_ee));
-		ret = -EIO;
-		goto error_async_power_up;
-	}
-
 	state = mhi_get_mhi_state(mhi_cntrl);
-	dev_dbg(dev, "Attempting power on with EE: %s, state: %s\n",
-		TO_MHI_EXEC_STR(current_ee), TO_MHI_STATE_STR(state));
+	dev_info(dev, "Attempting power ON with EE: %s, state: %s\n",
+		 TO_MHI_EXEC_STR(current_ee), TO_MHI_STATE_STR(state));
 
 	if (state == MHI_STATE_SYS_ERR) {
 		mhi_set_mhi_state(mhi_cntrl, MHI_STATE_RESET);
@@ -1208,11 +1200,11 @@ int mhi_sync_power_up(struct mhi_controller *mhi_cntrl)
 		return ret;
 
 	wait_event_timeout(mhi_cntrl->state_event,
-			   MHI_IN_MISSION_MODE(mhi_cntrl->ee) ||
+			   MHI_VALID_POWER_UP(mhi_cntrl->ee) ||
 			   MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state),
 			   msecs_to_jiffies(mhi_cntrl->timeout_ms));
 
-	ret = (MHI_IN_MISSION_MODE(mhi_cntrl->ee)) ? 0 : -ETIMEDOUT;
+	ret = (MHI_VALID_POWER_UP(mhi_cntrl->ee)) ? 0 : -ETIMEDOUT;
 	if (ret)
 		mhi_power_down(mhi_cntrl, false);
 
