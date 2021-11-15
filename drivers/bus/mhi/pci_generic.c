@@ -201,7 +201,7 @@ struct mhi_pci_dev_info {
 #define MHI_EVENT_CONFIG_DATA(ev_ring, el_count) \
 	{					\
 		.num_elements = el_count,	\
-		.irq_moderation_ms = 5,		\
+		.irq_moderation_ms = 0,		\
 		.irq = (ev_ring) + 1,		\
 		.priority = 1,			\
 		.mode = MHI_DB_BRST_DISABLE,	\
@@ -214,7 +214,7 @@ struct mhi_pci_dev_info {
 #define MHI_EVENT_CONFIG_HW_DATA(ev_ring, el_count, ch_num) \
 	{					\
 		.num_elements = el_count,	\
-		.irq_moderation_ms = 1,		\
+		.irq_moderation_ms = 5,		\
 		.irq = (ev_ring) + 1,		\
 		.priority = 1,			\
 		.mode = MHI_DB_BRST_DISABLE,	\
@@ -226,28 +226,42 @@ struct mhi_pci_dev_info {
 	}
 
 static const struct mhi_channel_config modem_qcom_v1_mhi_channels[] = {
-	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 16, 1),
-	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 16, 1),
+	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 32, 1),
+	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 32, 1),
+	MHI_CHANNEL_CONFIG_UL_SBL(2, "SAHARA", 64, 1),
+	MHI_CHANNEL_CONFIG_DL_SBL(3, "SAHARA", 64, 1),
+	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 16, 2),
+	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 16, 2),
+	MHI_CHANNEL_CONFIG_UL(8, "QDSS", 16, 2),
+	MHI_CHANNEL_CONFIG_DL(9, "QDSS", 16, 2),
 	MHI_CHANNEL_CONFIG_UL(12, "MBIM", 4, 0),
 	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 4, 0),
 	MHI_CHANNEL_CONFIG_UL(14, "QMI", 4, 0),
 	MHI_CHANNEL_CONFIG_DL(15, "QMI", 4, 0),
-	MHI_CHANNEL_CONFIG_UL(20, "IPCR", 8, 0),
-	MHI_CHANNEL_CONFIG_DL_AUTOQUEUE(21, "IPCR", 8, 0),
-	MHI_CHANNEL_CONFIG_UL_FP(34, "FIREHOSE", 32, 0),
-	MHI_CHANNEL_CONFIG_DL_FP(35, "FIREHOSE", 32, 0),
-	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0", 128, 2),
-	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0", 128, 3),
+	MHI_CHANNEL_CONFIG_UL(20, "IPCR", 32, 3),
+	MHI_CHANNEL_CONFIG_DL(21, "IPCR", 32, 3),
+	MHI_CHANNEL_CONFIG_UL(32, "DUN", 32, 3),
+	MHI_CHANNEL_CONFIG_DL(33, "DUN", 32, 3),
+	MHI_CHANNEL_CONFIG_UL_FP(34, "FIREHOSE", 32, 1),
+	MHI_CHANNEL_CONFIG_DL_FP(35, "FIREHOSE", 32, 1),
+	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 32, 1),
+	MHI_CHANNEL_CONFIG_DL(47, "IP_SW0", 32, 1),
+	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0", 128, 4),
+	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0", 128, 5),
+	MHI_CHANNEL_CONFIG_HW_DL(102, "IP_HW_ADPL", 128, 6),
 };
 
 static struct mhi_event_config modem_qcom_v1_mhi_events[] = {
 	/* first ring is control+data ring */
 	MHI_EVENT_CONFIG_CTRL(0, 64),
+	MHI_EVENT_CONFIG_DATA(1, 256),
 	/* DIAG dedicated event ring */
-	MHI_EVENT_CONFIG_DATA(1, 128),
+	MHI_EVENT_CONFIG_DATA(2, 64),
+	MHI_EVENT_CONFIG_DATA(3, 64),
 	/* Hardware channels request dedicated hardware event rings */
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100),
-	MHI_EVENT_CONFIG_HW_DATA(3, 2048, 101)
+	MHI_EVENT_CONFIG_HW_DATA(4, 1024, 100),
+	MHI_EVENT_CONFIG_HW_DATA(5, 2048, 101),
+	MHI_EVENT_CONFIG_HW_DATA(6, 1024, 102),
 };
 
 static const struct mhi_controller_config modem_qcom_v1_mhiv_config = {
