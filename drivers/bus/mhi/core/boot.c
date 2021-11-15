@@ -492,6 +492,7 @@ void mhi_edl_handler(struct mhi_controller *mhi_cntrl, bool force)
 	if (!mhi_cntrl->edl_download && !force) {
 		dev_err(dev, "Entered Emergency Download mode\n");
 		mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_EE_EDL);
+		mhi_uevent_notify(mhi_cntrl, mhi_cntrl->ee);
 		return;
 	}
 

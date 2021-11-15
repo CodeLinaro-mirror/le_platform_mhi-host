@@ -414,6 +414,7 @@ static int mhi_pm_mission_mode_transition(struct mhi_controller *mhi_cntrl)
 	device_for_each_child(&mhi_cntrl->mhi_dev->dev, &current_ee,
 			      mhi_destroy_device);
 	mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_EE_MISSION_MODE);
+	mhi_uevent_notify(mhi_cntrl, ee);
 
 	/* Force MHI to be in M0 state before continuing */
 	ret = __mhi_device_get_sync(mhi_cntrl);
@@ -513,6 +514,7 @@ static void mhi_pm_disable_transition(struct mhi_controller *mhi_cntrl)
 	dev_dbg(dev, "Waiting for all pending threads to complete\n");
 	wake_up_all(&mhi_cntrl->state_event);
 
+	mhi_uevent_notify(mhi_cntrl, MHI_EE_DISABLE_TRANSITION);
 	dev_dbg(dev, "Reset all active channels and remove MHI devices\n");
 	device_for_each_child(&mhi_cntrl->mhi_dev->dev, NULL, mhi_destroy_device);
 
@@ -583,6 +585,7 @@ static void mhi_pm_sys_error_transition(struct mhi_controller *mhi_cntrl)
 
 	/* We must notify MHI control driver so it can clean up first */
 	mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_SYS_ERROR);
+	mhi_uevent_notify(mhi_cntrl, MHI_EE_DISABLE_TRANSITION);
 
 	mutex_lock(&mhi_cntrl->pm_mutex);
 	write_lock_irq(&mhi_cntrl->pm_lock);
@@ -799,6 +802,7 @@ void mhi_pm_st_worker(struct work_struct *work)
 			 */
 			mhi_create_devices(mhi_cntrl);
 			mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_EE_SBL);
+			mhi_uevent_notify(mhi_cntrl, mhi_cntrl->ee);
 			wake_up_all(&mhi_cntrl->state_event);
 			if (mhi_cntrl->fbc_download)
 				mhi_download_amss_image(mhi_cntrl);
@@ -810,6 +814,7 @@ void mhi_pm_st_worker(struct work_struct *work)
 			write_lock_irq(&mhi_cntrl->pm_lock);
 			mhi_cntrl->ee = MHI_EE_FP;
 			write_unlock_irq(&mhi_cntrl->pm_lock);
+			mhi_uevent_notify(mhi_cntrl, mhi_cntrl->ee);
 			mhi_create_devices(mhi_cntrl);
 			break;
 		case DEV_ST_TRANSITION_READY:
