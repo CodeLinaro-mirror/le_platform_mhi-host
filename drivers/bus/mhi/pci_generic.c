@@ -433,6 +433,9 @@ static void mhi_pci_status_cb(struct mhi_controller *mhi_cntrl,
 	case MHI_CB_EE_MISSION_MODE:
 		pm_runtime_allow(&pdev->dev);
 		break;
+	case MHI_CB_FW_DL_ERR:
+		dev_warn(&pdev->dev, "error requesting firmware\n");
+		break;
 	default:
 		break;
 	}
