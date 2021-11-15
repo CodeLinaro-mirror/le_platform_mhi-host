@@ -119,9 +119,39 @@ static ssize_t oem_pk_hash_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(oem_pk_hash);
 
+static ssize_t edl_download_store(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t count)
+{
+	struct mhi_device *mhi_dev = to_mhi_device(dev);
+	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
+	unsigned long val;
+	int ret;
+
+	if (!MHI_REG_ACCESS_VALID(mhi_cntrl->pm_state))
+		return -EIO;
+
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0) {
+		dev_err(dev, "Could not parse string: %d\n", ret);
+		return ret;
+	}
+
+	if (!val)
+		return count;
+
+	dev_info(dev, "Start EDL firmware download\n");
+	ret = mhi_download_edl_image(mhi_cntrl);
+	if (ret)
+		return ret;
+
+	return count;
+}
+static DEVICE_ATTR_WO(edl_download);
+
 static struct attribute *mhi_dev_attrs[] = {
 	&dev_attr_serial_number.attr,
 	&dev_attr_oem_pk_hash.attr,
+	&dev_attr_edl_download.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(mhi_dev);
