@@ -412,7 +412,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 
 	/* wait for ready on pass through or any other execution environment */
 	if (!MHI_FW_LOAD_CAPABLE(mhi_cntrl->ee))
-		goto fw_load_ready_state;
+		goto exit_fw_load;
 
 	fw_name = (mhi_cntrl->ee == MHI_EE_EDL) ?
 		mhi_cntrl->edl_image : mhi_cntrl->fw_image;
@@ -458,7 +458,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 	/* Wait for ready since EDL image was loaded */
 	if (fw_name == mhi_cntrl->edl_image) {
 		release_firmware(firmware);
-		goto fw_load_ready_state;
+		goto exit_fw_load;
 	}
 
 	write_lock_irq(&mhi_cntrl->pm_lock);
@@ -482,23 +482,12 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 	}
 
 	release_firmware(firmware);
+	dev_info(dev, "Firmware load complete\n");
 
-fw_load_ready_state:
-	/* Transitioning into MHI RESET->READY state */
-	ret = mhi_ready_state_transition(mhi_cntrl);
-	if (ret) {
-		dev_err(dev, "MHI did not enter READY state\n");
-		goto error_ready_state;
-	}
+exit_fw_load:
+	mhi_queue_state_transition(mhi_cntrl, DEV_ST_TRANSITION_READY);
 
-	dev_info(dev, "Wait for device to enter SBL or Mission mode\n");
 	return;
-
-error_ready_state:
-	if (mhi_cntrl->fbc_download) {
-		mhi_free_bhie_table(mhi_cntrl, mhi_cntrl->fbc_image);
-		mhi_cntrl->fbc_image = NULL;
-	}
 
 error_fw_load:
 	mhi_cntrl->pm_state = MHI_PM_FW_DL_ERR;

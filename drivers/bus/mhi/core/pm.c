@@ -52,7 +52,8 @@ static struct mhi_pm_transitions const dev_state_transitions[] = {
 		MHI_PM_POR,
 		MHI_PM_POR | MHI_PM_DISABLE | MHI_PM_M0 |
 		MHI_PM_SYS_ERR_DETECT | MHI_PM_SHUTDOWN_PROCESS |
-		MHI_PM_LD_ERR_FATAL_DETECT | MHI_PM_FW_DL_ERR
+		MHI_PM_LD_ERR_FATAL_DETECT | MHI_PM_FW_DL_ERR |
+		MHI_PM_BOOT_FAILURE
 	},
 	{
 		MHI_PM_M0,
@@ -83,6 +84,11 @@ static struct mhi_pm_transitions const dev_state_transitions[] = {
 	{
 		MHI_PM_FW_DL_ERR,
 		MHI_PM_FW_DL_ERR | MHI_PM_SYS_ERR_DETECT |
+		MHI_PM_SHUTDOWN_PROCESS | MHI_PM_LD_ERR_FATAL_DETECT
+	},
+	{
+		MHI_PM_BOOT_FAILURE,
+		MHI_PM_SYS_ERR_DETECT | MHI_PM_SYS_ERR_PROCESS |
 		MHI_PM_SHUTDOWN_PROCESS | MHI_PM_LD_ERR_FATAL_DETECT
 	},
 	/* L1 States */
@@ -239,6 +245,8 @@ int mhi_ready_state_transition(struct mhi_controller *mhi_cntrl)
 	/* Set MHI to M0 state */
 	mhi_set_mhi_state(mhi_cntrl, MHI_STATE_M0);
 	read_unlock_bh(&mhi_cntrl->pm_lock);
+
+	dev_info(dev, "Wait for device to enter SBL or Mission mode\n");
 
 	return 0;
 
@@ -745,6 +753,7 @@ void mhi_pm_st_worker(struct work_struct *work)
 							struct mhi_controller,
 							st_worker);
 	struct device *dev = &mhi_cntrl->mhi_dev->dev;
+	int ret;
 
 	spin_lock_irq(&mhi_cntrl->transition_lock);
 	list_splice_tail_init(&mhi_cntrl->transition_list, &head);
@@ -786,7 +795,11 @@ void mhi_pm_st_worker(struct work_struct *work)
 			mhi_create_devices(mhi_cntrl);
 			break;
 		case DEV_ST_TRANSITION_READY:
-			mhi_ready_state_transition(mhi_cntrl);
+			ret = mhi_ready_state_transition(mhi_cntrl);
+			if (ret) {
+				mhi_cntrl->pm_state = MHI_PM_BOOT_FAILURE;
+				wake_up_all(&mhi_cntrl->state_event);
+			}
 			break;
 		case DEV_ST_TRANSITION_SYS_ERR:
 			mhi_pm_sys_error_transition(mhi_cntrl);
@@ -1177,6 +1190,11 @@ void mhi_power_down(struct mhi_controller *mhi_cntrl, bool graceful)
 	flush_work(&mhi_cntrl->st_worker);
 
 	free_irq(mhi_cntrl->irq[0], mhi_cntrl);
+
+	if (mhi_cntrl->fbc_image) {
+		mhi_free_bhie_table(mhi_cntrl, mhi_cntrl->fbc_image);
+		mhi_cntrl->fbc_image = NULL;
+	}
 }
 EXPORT_SYMBOL_GPL(mhi_power_down);
 

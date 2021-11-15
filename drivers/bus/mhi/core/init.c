@@ -71,6 +71,7 @@ static const char * const mhi_pm_state_str[] = {
 	[MHI_PM_STATE_M3] = "M3",
 	[MHI_PM_STATE_M3_EXIT] = "M3->M0",
 	[MHI_PM_STATE_FW_DL_ERR] = "Firmware Download Error",
+	[MHI_PM_STATE_BOOT_FAILURE] = "Ready/Boot Failure",
 	[MHI_PM_STATE_SYS_ERR_DETECT] = "SYS ERROR Detect",
 	[MHI_PM_STATE_SYS_ERR_PROCESS] = "SYS ERROR Process",
 	[MHI_PM_STATE_SHUTDOWN_PROCESS] = "SHUTDOWN Process",
@@ -1163,11 +1164,6 @@ EXPORT_SYMBOL_GPL(mhi_prepare_for_power_up);
 
 void mhi_unprepare_after_power_down(struct mhi_controller *mhi_cntrl)
 {
-	if (mhi_cntrl->fbc_image) {
-		mhi_free_bhie_table(mhi_cntrl, mhi_cntrl->fbc_image);
-		mhi_cntrl->fbc_image = NULL;
-	}
-
 	if (mhi_cntrl->rddm_image) {
 		mhi_free_bhie_table(mhi_cntrl, mhi_cntrl->rddm_image);
 		mhi_cntrl->rddm_image = NULL;
