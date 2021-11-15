@@ -127,14 +127,11 @@ static struct wwan_device *wwan_create_dev(struct device *parent)
 		goto done_unlock;
 
 	id = ida_alloc(&wwan_dev_ids, GFP_KERNEL);
-	if (id < 0) {
-		wwandev = ERR_PTR(id);
+	if (id < 0)
 		goto done_unlock;
-	}
 
 	wwandev = kzalloc(sizeof(*wwandev), GFP_KERNEL);
 	if (!wwandev) {
-		wwandev = ERR_PTR(-ENOMEM);
 		ida_free(&wwan_dev_ids, id);
 		goto done_unlock;
 	}
@@ -148,8 +145,7 @@ static struct wwan_device *wwan_create_dev(struct device *parent)
 	err = device_register(&wwandev->dev);
 	if (err) {
 		put_device(&wwandev->dev);
-		wwandev = ERR_PTR(err);
-		goto done_unlock;
+		wwandev = NULL;
 	}
 
 done_unlock:
