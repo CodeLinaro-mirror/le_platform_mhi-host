@@ -396,6 +396,7 @@ extern const char * const mhi_ee_str[MHI_EE_MAX];
 
 enum dev_st_transition {
 	DEV_ST_TRANSITION_PBL,
+	DEV_ST_TRANSITION_EDL,
 	DEV_ST_TRANSITION_READY,
 	DEV_ST_TRANSITION_SBL,
 	DEV_ST_TRANSITION_MISSION_MODE,
@@ -626,6 +627,7 @@ enum mhi_pm_state __must_check mhi_tryset_pm_state(
 const char *to_mhi_pm_state_str(enum mhi_pm_state state);
 int mhi_queue_state_transition(struct mhi_controller *mhi_cntrl,
 			       enum dev_st_transition state);
+int mhi_queue_next_transition(struct mhi_controller *mhi_cntrl);
 void mhi_pm_st_worker(struct work_struct *work);
 void mhi_pm_sys_err_handler(struct mhi_controller *mhi_cntrl);
 int mhi_pm_m0_transition(struct mhi_controller *mhi_cntrl);
@@ -682,7 +684,8 @@ int mhi_init_irq_setup(struct mhi_controller *mhi_cntrl);
 void mhi_deinit_free_irq(struct mhi_controller *mhi_cntrl);
 int mhi_rddm_prepare(struct mhi_controller *mhi_cntrl,
 		      struct image_info *img_info);
-void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl);
+void mhi_pbl_handler(struct mhi_controller *mhi_cntrl);
+void mhi_edl_handler(struct mhi_controller *mhi_cntrl);
 int mhi_prepare_channel(struct mhi_controller *mhi_cntrl,
 			struct mhi_chan *mhi_chan);
 int mhi_init_chan_ctxt(struct mhi_controller *mhi_cntrl,

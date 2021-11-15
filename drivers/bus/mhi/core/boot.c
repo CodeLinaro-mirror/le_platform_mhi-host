@@ -395,40 +395,27 @@ static void mhi_firmware_copy(struct mhi_controller *mhi_cntrl,
 	}
 }
 
-void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
+void mhi_pbl_handler(struct mhi_controller *mhi_cntrl)
 {
 	const struct firmware *firmware = NULL;
 	struct device *dev = &mhi_cntrl->mhi_dev->dev;
-	const char *fw_name;
 	void *buf;
 	dma_addr_t dma_addr;
 	size_t size;
 	int ret;
 
-	if (MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state)) {
-		dev_err(dev, "Device MHI is not in valid state\n");
-		return;
-	}
-
-	/* wait for ready on pass through or any other execution environment */
-	if (!MHI_FW_LOAD_CAPABLE(mhi_cntrl->ee))
-		goto exit_fw_load;
-
-	fw_name = (mhi_cntrl->ee == MHI_EE_EDL) ?
-		mhi_cntrl->edl_image : mhi_cntrl->fw_image;
-
-	if (!fw_name || (mhi_cntrl->fbc_download && (!mhi_cntrl->sbl_size ||
-						     !mhi_cntrl->seg_len))) {
+	if (!mhi_cntrl->fw_image || (mhi_cntrl->fbc_download &&
+	    (!mhi_cntrl->sbl_size || !mhi_cntrl->seg_len))) {
 		dev_err(dev,
 			"No firmware image defined or !sbl_size || !seg_len\n");
-		goto error_fw_load;
+		goto error_pbl_load;
 	}
 
-	ret = request_firmware(&firmware, fw_name, dev);
+	ret = request_firmware(&firmware, mhi_cntrl->fw_image, dev);
 	if (ret) {
 		dev_err(dev, "Error loading firmware: %d\n", ret);
 		mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_FW_DL_ERR);
-		goto error_fw_load;
+		goto error_pbl_load;
 	}
 
 	size = (mhi_cntrl->fbc_download) ? mhi_cntrl->sbl_size : firmware->size;
@@ -441,7 +428,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 				 GFP_KERNEL);
 	if (!buf) {
 		release_firmware(firmware);
-		goto error_fw_load;
+		goto error_pbl_load;
 	}
 
 	/* Download image using BHI */
@@ -449,17 +436,11 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 	ret = mhi_fw_load_bhi(mhi_cntrl, dma_addr, size);
 	dma_free_coherent(mhi_cntrl->cntrl_dev, size, buf, dma_addr);
 
-	/* Error or in EDL mode, we're done */
 	if (ret) {
-		dev_err(dev, "MHI did not load image over BHI, ret: %d\n", ret);
+		dev_err(dev, "MHI did not load PBL image over BHI, ret: %d\n",
+			ret);
 		release_firmware(firmware);
-		goto error_fw_load;
-	}
-
-	/* Wait for ready since EDL image was loaded */
-	if (fw_name == mhi_cntrl->edl_image) {
-		release_firmware(firmware);
-		goto exit_fw_load;
+		goto error_pbl_load;
 	}
 
 	write_lock_irq(&mhi_cntrl->pm_lock);
@@ -475,7 +456,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 					   firmware->size);
 		if (ret) {
 			release_firmware(firmware);
-			goto error_fw_load;
+			goto error_pbl_load;
 		}
 
 		/* Load the firmware into BHIE vec table */
@@ -483,14 +464,76 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 	}
 
 	release_firmware(firmware);
-	dev_info(dev, "Firmware load complete\n");
+	dev_info(dev, "Firmware load in PBL complete\n");
 
-exit_fw_load:
 	mhi_queue_state_transition(mhi_cntrl, DEV_ST_TRANSITION_READY);
 
 	return;
 
-error_fw_load:
+error_pbl_load:
+	mhi_cntrl->pm_state = MHI_PM_FW_DL_ERR;
+	wake_up_all(&mhi_cntrl->state_event);
+}
+
+void mhi_edl_handler(struct mhi_controller *mhi_cntrl)
+{
+	const struct firmware *firmware = NULL;
+	struct device *dev = &mhi_cntrl->mhi_dev->dev;
+	void *buf;
+	dma_addr_t dma_addr;
+	int ret;
+
+	if (!mhi_cntrl->edl_image) {
+		dev_err(dev, "No firmware image defined for EDL\n");
+		goto error_edl_load;
+	}
+
+	/* wait for controller to initiate the download if not set */
+	if (!mhi_cntrl->edl_download) {
+		dev_err(dev, "Entered Emergency Download mode\n");
+		mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_EE_EDL);
+		return;
+	}
+
+	ret = request_firmware(&firmware, mhi_cntrl->edl_image, dev);
+	if (ret) {
+		dev_err(dev, "Error loading firmware: %d\n", ret);
+		mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_FW_DL_ERR);
+		goto error_edl_load;
+	}
+
+	buf = dma_alloc_coherent(mhi_cntrl->cntrl_dev, firmware->size,
+				&dma_addr, GFP_KERNEL);
+	if (!buf) {
+		release_firmware(firmware);
+		goto error_edl_load;
+	}
+
+	/* Download image using BHI */
+	memcpy(buf, firmware->data, firmware->size);
+	ret = mhi_fw_load_bhi(mhi_cntrl, dma_addr, firmware->size);
+	dma_free_coherent(mhi_cntrl->cntrl_dev, firmware->size, buf, dma_addr);
+
+	if (ret) {
+		dev_err(dev, "MHI did not load EDL image over BHI, ret: %d\n",
+			ret);
+		release_firmware(firmware);
+		goto error_edl_load;
+	}
+
+	write_lock_irq(&mhi_cntrl->pm_lock);
+	mhi_cntrl->dev_state = MHI_STATE_RESET;
+	write_unlock_irq(&mhi_cntrl->pm_lock);
+
+	release_firmware(firmware);
+
+	dev_info(dev, "Firmware load in EDL complete\n");
+
+	mhi_queue_state_transition(mhi_cntrl, DEV_ST_TRANSITION_READY);
+
+	return;
+
+error_edl_load:
 	mhi_cntrl->pm_state = MHI_PM_FW_DL_ERR;
 	wake_up_all(&mhi_cntrl->state_event);
 }
