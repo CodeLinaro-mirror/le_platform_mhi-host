@@ -7,6 +7,7 @@
 #define _MHI_H_
 
 #include <linux/device.h>
+#include <linux/delay.h>
 #include <linux/dma-direction.h>
 #include <linux/mutex.h>
 #include <linux/skbuff.h>
@@ -19,6 +20,20 @@
 #define MHI_MAX_MTU 0xffff
 
 #define MHI_MAX_OEM_PK_HASH_SEGMENTS 16
+
+typedef unsigned long kernel_ulong_t;
+#define MHI_DEVICE_MODALIAS_FMT "mhi:%s"
+#define MHI_NAME_SIZE 32
+
+/**
+ * struct mhi_device_id - MHI device identification
+ * @chan: MHI channel name
+ * @driver_data: driver data;
+ */
+struct mhi_device_id {
+	const char chan[MHI_NAME_SIZE];
+	kernel_ulong_t driver_data;
+};
 
 struct mhi_chan;
 struct mhi_event;
@@ -811,5 +826,16 @@ int mhi_queue_skb(struct mhi_device *mhi_dev, enum dma_data_direction dir,
  * @dir: DMA direction for the channel
  */
 bool mhi_queue_is_full(struct mhi_device *mhi_dev, enum dma_data_direction dir);
+
+/* see Documentation/timers/timers-howto.rst for the thresholds */
+static inline void fsleep(unsigned long usecs)
+{
+	if (usecs <= 10)
+		udelay(usecs);
+	else if (usecs <= 20000)
+		usleep_range(usecs, 2 * usecs);
+	else
+		msleep(DIV_ROUND_UP(usecs, 1000));
+}
 
 #endif /* _MHI_H_ */
