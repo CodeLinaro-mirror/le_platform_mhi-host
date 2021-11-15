@@ -182,30 +182,12 @@ static void wwan_remove_dev(struct wwan_device *wwandev)
 
 /* ------- WWAN port management ------- */
 
-static const struct {
-	const char * const name;	/* Port type name */
-	const char * const devsuf;	/* Port devce name suffix */
-} wwan_port_types[WWAN_PORT_MAX + 1] = {
-	[WWAN_PORT_AT] = {
-		.name = "AT",
-		.devsuf = "at",
-	},
-	[WWAN_PORT_MBIM] = {
-		.name = "MBIM",
-		.devsuf = "mbim",
-	},
-	[WWAN_PORT_QMI] = {
-		.name = "QMI",
-		.devsuf = "qmi",
-	},
-	[WWAN_PORT_QCDM] = {
-		.name = "QCDM",
-		.devsuf = "qcdm",
-	},
-	[WWAN_PORT_FIREHOSE] = {
-		.name = "FIREHOSE",
-		.devsuf = "firehose",
-	},
+static const char * const wwan_port_type_str[WWAN_PORT_MAX + 1] = {
+	[WWAN_PORT_AT] = "AT",
+	[WWAN_PORT_MBIM] = "MBIM",
+	[WWAN_PORT_QMI] = "QMI",
+	[WWAN_PORT_QCDM] = "QCDM",
+	[WWAN_PORT_FIREHOSE] = "FIREHOSE",
 };
 
 static ssize_t type_show(struct device *dev, struct device_attribute *attr,
@@ -213,7 +195,7 @@ static ssize_t type_show(struct device *dev, struct device_attribute *attr,
 {
 	struct wwan_port *port = to_wwan_port(dev);
 
-	return sprintf(buf, "%s\n", wwan_port_types[port->type].name);
+	return sprintf(buf, "%s\n", wwan_port_type_str[port->type]);
 }
 static DEVICE_ATTR_RO(type);
 
@@ -349,12 +331,10 @@ struct wwan_port *wwan_create_port(struct device *parent,
 	port->dev.devt = MKDEV(wwan_major, minor);
 	dev_set_drvdata(&port->dev, drvdata);
 
-	/* allocate unique name based on wwan device id, port type and number */
-	snprintf(namefmt, sizeof(namefmt), "wwan%u%s%%d", wwandev->id,
-		 wwan_port_types[port->type].devsuf);
-
-	/* Serialize ports registration */
-	mutex_lock(&wwan_register_lock);
+	/* create unique name based on wwan device id, port index and type */
+	dev_set_name(&port->dev, "wwan%up%u%s", wwandev->id,
+		     atomic_inc_return(&wwandev->port_id),
+		     wwan_port_type_str[port->type]);
 
 	__wwan_port_dev_assign_name(port, namefmt);
 	err = device_register(&port->dev);
