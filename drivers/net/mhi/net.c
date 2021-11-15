@@ -11,19 +11,12 @@
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
 #include <linux/u64_stats_sync.h>
-#include <linux/wwan.h>
 
 #include "mhi.h"
 
 #define MHI_NET_MIN_MTU		ETH_MIN_MTU
 #define MHI_NET_MAX_MTU		0xffff
 #define MHI_NET_DEFAULT_MTU	0x4000
-
-/* When set to false, the default netdev (link 0) is not created, and it's up
- * to user to create the link (via wwan rtnetlink).
- */
-static bool create_default_iface = true;
-module_param(create_default_iface, bool, 0);
 
 struct mhi_device_info {
 	const char *netname;
@@ -302,33 +295,32 @@ static void mhi_net_rx_refill_work(struct work_struct *work)
 		schedule_delayed_work(&mhi_netdev->rx_refill, HZ / 2);
 }
 
-static int mhi_net_newlink(void *ctxt, struct net_device *ndev, u32 if_id,
-			   struct netlink_ext_ack *extack)
+static struct device_type wwan_type = {
+	.name = "wwan",
+};
+
+static int mhi_net_probe(struct mhi_device *mhi_dev,
+			 const struct mhi_device_id *id)
 {
-	const struct mhi_device_info *info;
-	struct mhi_device *mhi_dev = ctxt;
+	const struct mhi_device_info *info = (struct mhi_device_info *)id->driver_data;
+	struct device *dev = &mhi_dev->dev;
 	struct mhi_net_dev *mhi_netdev;
+	struct net_device *ndev;
 	int err;
 
-	info = (struct mhi_device_info *)mhi_dev->id->driver_data;
+	ndev = alloc_netdev(sizeof(*mhi_netdev), info->netname,
+			    NET_NAME_PREDICTABLE, mhi_net_setup);
+	if (!ndev)
+		return -ENOMEM;
 
-	/* For now we only support one link (link context 0), driver must be
-	 * reworked to break 1:1 relationship for net MBIM and to forward setup
-	 * call to rmnet(QMAP) otherwise.
-	 */
-	if (if_id != 0)
-		return -EINVAL;
-
-	if (dev_get_drvdata(&mhi_dev->dev))
-		return -EBUSY;
-
-	mhi_netdev = wwan_netdev_drvpriv(ndev);
-
-	dev_set_drvdata(&mhi_dev->dev, mhi_netdev);
+	mhi_netdev = netdev_priv(ndev);
+	dev_set_drvdata(dev, mhi_netdev);
 	mhi_netdev->ndev = ndev;
 	mhi_netdev->mdev = mhi_dev;
 	mhi_netdev->skbagg_head = NULL;
 	mhi_netdev->proto = info->proto;
+	SET_NETDEV_DEV(ndev, &mhi_dev->dev);
+	SET_NETDEV_DEVTYPE(ndev, &wwan_type);
 
 	INIT_DELAYED_WORK(&mhi_netdev->rx_refill, mhi_net_rx_refill_work);
 	u64_stats_init(&mhi_netdev->stats.rx_syncp);
@@ -342,12 +334,9 @@ static int mhi_net_newlink(void *ctxt, struct net_device *ndev, u32 if_id,
 	/* Number of transfer descriptors determines size of the queue */
 	mhi_netdev->rx_queue_sz = mhi_get_free_desc_count(mhi_dev, DMA_FROM_DEVICE);
 
-	if (extack)
-		err = register_netdevice(ndev);
-	else
-		err = register_netdev(ndev);
+	err = register_netdev(ndev);
 	if (err)
-		return err;
+		goto out_err;
 
 	if (mhi_netdev->proto) {
 		err = mhi_netdev->proto->init(mhi_netdev);
@@ -358,87 +347,23 @@ static int mhi_net_newlink(void *ctxt, struct net_device *ndev, u32 if_id,
 	return 0;
 
 out_err_proto:
-	unregister_netdevice(ndev);
-	return err;
-}
-
-static void mhi_net_dellink(void *ctxt, struct net_device *ndev,
-			    struct list_head *head)
-{
-	struct mhi_net_dev *mhi_netdev = wwan_netdev_drvpriv(ndev);
-	struct mhi_device *mhi_dev = ctxt;
-
-	if (head)
-		unregister_netdevice_queue(ndev, head);
-	else
-		unregister_netdev(ndev);
-
-	mhi_unprepare_from_transfer(mhi_dev);
-
-	kfree_skb(mhi_netdev->skbagg_head);
-
-	dev_set_drvdata(&mhi_dev->dev, NULL);
-}
-
-static const struct wwan_ops mhi_wwan_ops = {
-	.priv_size = sizeof(struct mhi_net_dev),
-	.setup = mhi_net_setup,
-	.newlink = mhi_net_newlink,
-	.dellink = mhi_net_dellink,
-};
-
-static int mhi_net_probe(struct mhi_device *mhi_dev,
-			 const struct mhi_device_id *id)
-{
-	const struct mhi_device_info *info = (struct mhi_device_info *)id->driver_data;
-	struct mhi_controller *cntrl = mhi_dev->mhi_cntrl;
-	struct net_device *ndev;
-	int err;
-
-	err = wwan_register_ops(&cntrl->mhi_dev->dev, &mhi_wwan_ops, mhi_dev,
-				WWAN_NO_DEFAULT_LINK);
-	if (err)
-		return err;
-
-	if (!create_default_iface)
-		return 0;
-
-	/* Create a default interface which is used as either RMNET real-dev,
-	 * MBIM link 0 or ip link 0)
-	 */
-	ndev = alloc_netdev(sizeof(struct mhi_net_dev), info->netname,
-			    NET_NAME_PREDICTABLE, mhi_net_setup);
-	if (!ndev) {
-		err = -ENOMEM;
-		goto err_unregister;
-	}
-
-	SET_NETDEV_DEV(ndev, &mhi_dev->dev);
-
-	err = mhi_net_newlink(mhi_dev, ndev, 0, NULL);
-	if (err)
-		goto err_release;
-
-	return 0;
-
-err_release:
+	unregister_netdev(ndev);
+out_err:
 	free_netdev(ndev);
-err_unregister:
-	wwan_unregister_ops(&cntrl->mhi_dev->dev);
-
 	return err;
 }
 
 static void mhi_net_remove(struct mhi_device *mhi_dev)
 {
 	struct mhi_net_dev *mhi_netdev = dev_get_drvdata(&mhi_dev->dev);
-	struct mhi_controller *cntrl = mhi_dev->mhi_cntrl;
 
-	/* WWAN core takes care of removing remaining links */
-	wwan_unregister_ops(&cntrl->mhi_dev->dev);
+	unregister_netdev(mhi_netdev->ndev);
 
-	if (create_default_iface)
-		mhi_net_dellink(mhi_dev, mhi_netdev->ndev, NULL);
+	mhi_unprepare_from_transfer(mhi_netdev->mdev);
+
+	kfree_skb(mhi_netdev->skbagg_head);
+
+	free_netdev(mhi_netdev->ndev);
 }
 
 static const struct mhi_device_info mhi_hwip0 = {
