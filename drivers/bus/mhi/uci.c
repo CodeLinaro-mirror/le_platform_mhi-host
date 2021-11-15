@@ -185,7 +185,7 @@ static int mhi_uci_dev_start_chan(struct uci_dev *udev)
 		spin_lock_init(&uchan->dl_pending_lock);
 		INIT_LIST_HEAD(&uchan->dl_pending);
 
-		ret = mhi_prepare_for_transfer(udev->mhi_dev);
+		ret = mhi_prepare_for_transfer(udev->mhi_dev, 0);
 		if (ret) {
 			dev_err(&udev->mhi_dev->dev, "Error starting transfer channels\n");
 			goto error_chan_cleanup;

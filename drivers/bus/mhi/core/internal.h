@@ -688,7 +688,7 @@ int mhi_rddm_prepare(struct mhi_controller *mhi_cntrl,
 void mhi_pbl_handler(struct mhi_controller *mhi_cntrl);
 void mhi_edl_handler(struct mhi_controller *mhi_cntrl, bool force);
 int mhi_prepare_channel(struct mhi_controller *mhi_cntrl,
-			struct mhi_chan *mhi_chan);
+			struct mhi_chan *mhi_chan, unsigned int flags);
 int mhi_init_chan_ctxt(struct mhi_controller *mhi_cntrl,
 		       struct mhi_chan *mhi_chan);
 void mhi_deinit_chan_ctxt(struct mhi_controller *mhi_cntrl,
