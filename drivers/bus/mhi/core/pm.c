@@ -779,9 +779,11 @@ void mhi_pm_st_worker(struct work_struct *work)
 			/*
 			 * The MHI devices are only created when the client
 			 * device switches its Execution Environment (EE) to
-			 * either SBL or AMSS states
+			 * either SBL or AMSS states.
 			 */
 			mhi_create_devices(mhi_cntrl);
+			mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_EE_SBL);
+			wake_up_all(&mhi_cntrl->state_event);
 			if (mhi_cntrl->fbc_download)
 				mhi_download_amss_image(mhi_cntrl);
 			break;
