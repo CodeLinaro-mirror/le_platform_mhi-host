@@ -388,8 +388,6 @@ extern const char * const mhi_ee_str[MHI_EE_MAX];
 #define TO_MHI_EXEC_STR(ee) (((ee) >= MHI_EE_MAX) ? \
 			     "INVALID_EE" : mhi_ee_str[ee])
 
-#define MHI_IN_PBL(ee) (ee == MHI_EE_PBL || ee == MHI_EE_PTHRU || \
-			ee == MHI_EE_EDL)
 #define MHI_IN_MISSION_MODE(ee) (ee == MHI_EE_AMSS || ee == MHI_EE_WFW || \
 				 ee == MHI_EE_FP)
 #define MHI_FW_LOAD_CAPABLE(ee) (ee == MHI_EE_PBL || ee == MHI_EE_EDL)

@@ -685,7 +685,8 @@ static void mhi_pm_sys_error_transition(struct mhi_controller *mhi_cntrl)
 	}
 
 	/* Transition to next state */
-	if (MHI_IN_PBL(mhi_get_exec_env(mhi_cntrl))) {
+	mhi_cntrl->ee = mhi_get_exec_env(mhi_cntrl);
+	if (MHI_FW_LOAD_CAPABLE(mhi_cntrl->ee)) {
 		write_lock_irq(&mhi_cntrl->pm_lock);
 		cur_state = mhi_tryset_pm_state(mhi_cntrl, MHI_PM_POR);
 		write_unlock_irq(&mhi_cntrl->pm_lock);
@@ -1058,7 +1059,6 @@ static void mhi_deassert_dev_wake(struct mhi_controller *mhi_cntrl,
 int mhi_async_power_up(struct mhi_controller *mhi_cntrl)
 {
 	enum mhi_state state;
-	enum mhi_ee_type current_ee;
 	enum dev_st_transition next_state;
 	struct device *dev = &mhi_cntrl->mhi_dev->dev;
 	u32 val;
@@ -1086,13 +1086,12 @@ int mhi_async_power_up(struct mhi_controller *mhi_cntrl)
 	write_lock_irq(&mhi_cntrl->pm_lock);
 	mhi_write_reg(mhi_cntrl, mhi_cntrl->bhi, BHI_INTVEC, 0);
 	mhi_cntrl->pm_state = MHI_PM_POR;
-	mhi_cntrl->ee = MHI_EE_MAX;
-	current_ee = mhi_get_exec_env(mhi_cntrl);
+	mhi_cntrl->ee = mhi_get_exec_env(mhi_cntrl);
 	write_unlock_irq(&mhi_cntrl->pm_lock);
 
 	state = mhi_get_mhi_state(mhi_cntrl);
 	dev_info(dev, "Attempting power ON with EE: %s, state: %s\n",
-		 TO_MHI_EXEC_STR(current_ee), TO_MHI_STATE_STR(state));
+		 TO_MHI_EXEC_STR(mhi_cntrl->ee), TO_MHI_STATE_STR(state));
 
 	if (state == MHI_STATE_SYS_ERR) {
 		mhi_set_mhi_state(mhi_cntrl, MHI_STATE_RESET);
@@ -1120,7 +1119,7 @@ int mhi_async_power_up(struct mhi_controller *mhi_cntrl)
 	}
 
 	/* Transition to next state */
-	next_state = MHI_IN_PBL(current_ee) ?
+	next_state = MHI_FW_LOAD_CAPABLE(mhi_cntrl->ee) ?
 		DEV_ST_TRANSITION_PBL : DEV_ST_TRANSITION_READY;
 
 	mhi_queue_state_transition(mhi_cntrl, next_state);
