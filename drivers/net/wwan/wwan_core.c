@@ -12,7 +12,6 @@
 #include <linux/skbuff.h>
 #include <linux/slab.h>
 #include <linux/types.h>
-#include <linux/termios.h>
 #include <linux/wwan.h>
 
 #define WWAN_MAX_MINORS 256 /* 256 minors allowed with register_chrdev() */
@@ -635,110 +634,6 @@ static __poll_t wwan_port_fops_poll(struct file *filp, poll_table *wait)
 	return mask;
 }
 
-/* Implements minimalistic stub terminal IOCTLs support */
-static long wwan_port_fops_at_ioctl(struct wwan_port *port, unsigned int cmd,
-				    unsigned long arg)
-{
-	int ret = 0;
-
-	mutex_lock(&port->data_lock);
-
-	switch (cmd) {
-	case TCFLSH:
-		break;
-
-	case TCGETS:
-		if (copy_to_user((void __user *)arg, &port->at_data.termios,
-				 sizeof(struct termios)))
-			ret = -EFAULT;
-		break;
-
-	case TCSETS:
-	case TCSETSW:
-	case TCSETSF:
-		if (copy_from_user(&port->at_data.termios, (void __user *)arg,
-				   sizeof(struct termios)))
-			ret = -EFAULT;
-		break;
-
-#ifdef TCGETS2
-	case TCGETS2:
-		if (copy_to_user((void __user *)arg, &port->at_data.termios,
-				 sizeof(struct termios2)))
-			ret = -EFAULT;
-		break;
-
-	case TCSETS2:
-	case TCSETSW2:
-	case TCSETSF2:
-		if (copy_from_user(&port->at_data.termios, (void __user *)arg,
-				   sizeof(struct termios2)))
-			ret = -EFAULT;
-		break;
-#endif
-
-	case TIOCMGET:
-		ret = put_user(port->at_data.mdmbits, (int __user *)arg);
-		break;
-
-	case TIOCMSET:
-	case TIOCMBIC:
-	case TIOCMBIS: {
-		int mdmbits;
-
-		if (copy_from_user(&mdmbits, (int __user *)arg, sizeof(int))) {
-			ret = -EFAULT;
-			break;
-		}
-		if (cmd == TIOCMBIC)
-			port->at_data.mdmbits &= ~mdmbits;
-		else if (cmd == TIOCMBIS)
-			port->at_data.mdmbits |= mdmbits;
-		else
-			port->at_data.mdmbits = mdmbits;
-		break;
-	}
-
-	default:
-		ret = -ENOIOCTLCMD;
-	}
-
-	mutex_unlock(&port->data_lock);
-
-	return ret;
-}
-
-static long wwan_port_fops_ioctl(struct file *filp, unsigned int cmd,
-				 unsigned long arg)
-{
-	struct wwan_port *port = filp->private_data;
-	int res;
-
-	if (port->type == WWAN_PORT_AT) {	/* AT port specific IOCTLs */
-		res = wwan_port_fops_at_ioctl(port, cmd, arg);
-		if (res != -ENOIOCTLCMD)
-			return res;
-	}
-
-	switch (cmd) {
-	case TIOCINQ: {	/* aka SIOCINQ aka FIONREAD */
-		unsigned long flags;
-		struct sk_buff *skb;
-		int amount = 0;
-
-		spin_lock_irqsave(&port->rxq.lock, flags);
-		skb_queue_walk(&port->rxq, skb)
-			amount += skb->len;
-		spin_unlock_irqrestore(&port->rxq.lock, flags);
-
-		return put_user(amount, (int __user *)arg);
-	}
-
-	default:
-		return -ENOIOCTLCMD;
-	}
-}
-
 static const struct file_operations wwan_port_fops = {
 	.owner = THIS_MODULE,
 	.open = wwan_port_fops_open,
@@ -746,10 +641,6 @@ static const struct file_operations wwan_port_fops = {
 	.read = wwan_port_fops_read,
 	.write = wwan_port_fops_write,
 	.poll = wwan_port_fops_poll,
-	.unlocked_ioctl = wwan_port_fops_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = compat_ptr_ioctl,
-#endif
 	.llseek = noop_llseek,
 };
 
