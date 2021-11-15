@@ -999,6 +999,11 @@ int mhi_process_data_event_ring(struct mhi_controller *mhi_cntrl,
 		    mhi_cntrl->mhi_chan[chan].configured) {
 			mhi_chan = &mhi_cntrl->mhi_chan[chan];
 
+			dev_dbg(&mhi_chan->mhi_dev->dev,
+				"Processing Event: 0x%llx 0x%08x 0x%08x\n",
+				local_rp->ptr, local_rp->dword[0],
+				local_rp->dword[1]);
+
 			if (likely(type == MHI_PKT_TYPE_TX_EVENT)) {
 				parse_xfer_event(mhi_cntrl, local_rp, mhi_chan);
 				event_quota--;
@@ -1186,6 +1191,7 @@ EXPORT_SYMBOL_GPL(mhi_queue_dma);
 int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 			struct mhi_buf_info *info, enum mhi_flags flags)
 {
+	struct device *dev = &mhi_chan->mhi_dev->dev;
 	struct mhi_ring *buf_ring, *tre_ring;
 	struct mhi_tre *mhi_tre;
 	struct mhi_buf_info *buf_info;
@@ -1222,6 +1228,10 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
 	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(info->len);
 	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
+
+	dev_dbg(dev, "WP: 0x%llx TRE: 0x%llx 0x%08x 0x%08x\n",
+		(unsigned long long int) mhi_tre, mhi_tre->ptr,
+		mhi_tre->dword[0], mhi_tre->dword[1]);
 
 	/* increment WP */
 	mhi_add_ring_element(mhi_cntrl, tre_ring);
