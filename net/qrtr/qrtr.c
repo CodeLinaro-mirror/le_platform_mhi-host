@@ -5,7 +5,6 @@
  */
 #include <linux/module.h>
 #include <linux/netlink.h>
-#include <linux/qrtr.h>
 #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
 #include <linux/spinlock.h>
 #include <linux/wait.h>
@@ -1329,14 +1328,8 @@ static int __init qrtr_proto_init(void)
 	if (rc)
 		goto err_proto;
 
-	rc = qrtr_ns_init();
-	if (rc)
-		goto err_sock;
-
 	return 0;
 
-err_sock:
-	sock_unregister(qrtr_family.family);
 err_proto:
 	proto_unregister(&qrtr_proto);
 	return rc;
@@ -1345,7 +1338,6 @@ postcore_initcall(qrtr_proto_init);
 
 static void __exit qrtr_proto_fini(void)
 {
-	qrtr_ns_remove();
 	sock_unregister(qrtr_family.family);
 	proto_unregister(&qrtr_proto);
 }

@@ -6,7 +6,6 @@
  */
 
 #include <linux/module.h>
-#include <linux/qrtr.h>
 #include <linux/workqueue.h>
 #include <net/sock.h>
 
@@ -753,7 +752,7 @@ static void qrtr_ns_data_ready(struct sock *sk)
 	queue_work(qrtr_ns.workqueue, &qrtr_ns.work);
 }
 
-int qrtr_ns_init(void)
+static int __init qrtr_ns_init(void)
 {
 	struct sockaddr_qrtr sq;
 	int ret;
@@ -805,16 +804,17 @@ err_sock:
 	sock_release(qrtr_ns.sock);
 	return ret;
 }
-EXPORT_SYMBOL_GPL(qrtr_ns_init);
+module_init(qrtr_ns_init);
 
-void qrtr_ns_remove(void)
+static void __exit qrtr_ns_remove(void)
 {
 	cancel_work_sync(&qrtr_ns.work);
 	destroy_workqueue(qrtr_ns.workqueue);
 	sock_release(qrtr_ns.sock);
 }
-EXPORT_SYMBOL_GPL(qrtr_ns_remove);
+module_exit(qrtr_ns_remove);
 
 MODULE_AUTHOR("Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>");
 MODULE_DESCRIPTION("Qualcomm IPC Router Nameservice");
 MODULE_LICENSE("Dual BSD/GPL");
+MODULE_SOFTDEP("pre: qrtr_main");
