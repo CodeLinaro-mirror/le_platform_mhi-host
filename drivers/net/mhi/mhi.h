@@ -4,6 +4,48 @@
  * Copyright (C) 2021 Linaro Ltd <loic.poulain@linaro.org>
  */
 
+#if BITS_PER_LONG == 64
+#include <asm/local64.h>
+
+typedef struct {
+	local64_t       v;
+} u64_stats_t ;
+
+static inline u64 u64_stats_read(const u64_stats_t *p)
+{
+	return local64_read(&p->v);
+}
+
+static inline void u64_stats_add(u64_stats_t *p, unsigned long val)
+{
+	local64_add(val, &p->v);
+}
+
+static inline void u64_stats_inc(u64_stats_t *p)
+{
+	local64_inc(&p->v);
+}
+#else
+typedef struct {
+	u64             v;
+} u64_stats_t;
+
+static inline u64 u64_stats_read(const u64_stats_t *p)
+{
+	return p->v;
+}
+
+static inline void u64_stats_add(u64_stats_t *p, unsigned long val)
+{
+	p->v += val;
+}
+
+static inline void u64_stats_inc(u64_stats_t *p)
+{
+	p->v++;
+}
+#endif
+
 struct mhi_net_stats {
 	u64_stats_t rx_packets;
 	u64_stats_t rx_bytes;
