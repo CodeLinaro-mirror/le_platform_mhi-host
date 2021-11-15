@@ -426,6 +426,8 @@ static void mhi_pci_status_cb(struct mhi_controller *mhi_cntrl,
 	case MHI_CB_FATAL_ERROR:
 	case MHI_CB_SYS_ERROR:
 		dev_warn(&pdev->dev, "firmware crashed (%u)\n", cb);
+	/* fallthrough */
+	case MHI_CB_EE_SBL:
 		pm_runtime_forbid(&pdev->dev);
 		break;
 	case MHI_CB_EE_MISSION_MODE:
