@@ -942,8 +942,28 @@ int mhi_pm_resume(struct mhi_controller *mhi_cntrl)
 	if (MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state))
 		return -EIO;
 
-	if (mhi_get_mhi_state(mhi_cntrl) != MHI_STATE_M3)
+	if (mhi_get_mhi_state(mhi_cntrl) == MHI_STATE_SYS_ERR) {
+		/* If we are in SYS_ERR state, let MHI stack manages the error
+		 * and resume successfully.
+		 */
+		dev_warn(dev, "Entered error while suspended\n");
+
+		write_lock_irq(&mhi_cntrl->pm_lock);
+		cur_state = mhi_tryset_pm_state(mhi_cntrl,
+						MHI_PM_SYS_ERR_DETECT);
+		write_unlock_irq(&mhi_cntrl->pm_lock);
+
+		if (cur_state == MHI_PM_SYS_ERR_DETECT) {
+			mhi_pm_sys_err_handler(mhi_cntrl);
+			return 0;
+		}
+	}
+
+	if (mhi_get_mhi_state(mhi_cntrl) != MHI_STATE_M3) {
+		dev_warn(dev, "Is not in M3 state, resume failed %d\n",
+			 mhi_get_mhi_state(mhi_cntrl));
 		return -EINVAL;
+	}
 
 	/* Notify clients about exiting LPM */
 	list_for_each_entry_safe(itr, tmp, &mhi_cntrl->lpm_chans, node) {
