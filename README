@@ -1,18 +1,359 @@
-Linux kernel
-============
+These kernel modules have been tested on: HP Z230 SFF and HP Z2 machines with PCIe capabilities of Gen3x2 or higher.
 
-There are several guides for kernel developers and users. These guides can
-be rendered in a number of formats, like HTML and PDF. Please read
-Documentation/admin-guide/README.rst first.
+Distros: Ubuntu 16.04 and 18.04
+Kernel versions: 4.15 and 5.4+
 
-In order to build the documentation, use ``make htmldocs`` or
-``make pdfdocs``.  The formatted documentation can also be read online at:
+Setup: SDX65LE EP attached over Oculink SFF-8612 cable to PCIe card with Oculink support.
 
-    https://www.kernel.org/doc/html/latest/
+Oculink PCIe adapter link:
+https://www.amazon.com/PCIe-Lane-Oculink-SFF-8612-Adapter/dp/B07CVNNZM4/ref=sr_1_2?crid=22SDL2W16YCBE&keywords=oculink+pcie+sff-8612&qid=1561069494&s=electronics&sprefix=oculink+%2Celectronics%2C182&sr=1-2
 
-There are various text files in the Documentation/ subdirectory,
-several of them using the Restructured Text markup notation.
+--------------
+Initial setup:
+--------------
 
-Please read the Documentation/process/changes.rst file, as it contains the
-requirements for building and running the kernel, and information about
-the problems which may result by upgrading your kernel.
+Power on SDX (should be spinning in PBL as PCIe early init DIP switch should be set)
+Ensure host machine is powered off
+Power on host (BIOS should detect SDX and a bootup of SDX should proceed as it receives PERST signal from host)
+Once done, check if device has enumerated by running lspci (-nvv), you will see an entry for SDX65:
+	01:00.0 Unassigned class [ff00]: Qualcomm Device 0308
+Check if device config spaace access is available, run lspci -xx
+
+Packages required:
+
+Pre-requisites:
+sudo apt-get update
+sudo apt-get install build-essential git
+
+Optional:
+sudo apt-get install screen
+
+------
+Setup:
+------
+
+Build and execute:
+
+Run source build/envsetup.sh
+Obtain kernel version information from the output
+
+Run build/build.sh <mhi / pci / net / wwan / qrtr / all / clean> <all / clean>
+	No arguments are needed to build all modules
+Use build/install.sh to build and load all modules and have them auto-load at host bootup.
+Use build/uninstall.sh to clean build and unload all modules and remove them from auto-load at host bootup list.
+Use build/cross_compile.sh <valid kernel version> to build modules and place them in the "out" directory along with an install script.
+
+Scripts:
+Run scripts/load.sh <mhi / pci / net / wwan / qrtr / all> <-v> to load all KOs
+	No arguments are needed to load all modules
+	"-v" to enable dynamic debug for chosen or all modules (if using -v, please be root using sudo -s)
+Run scripts/unload.sh <mhi / pci / net / wwan / qrtr / all> to unload all KOs
+	No arguments are needed to unload all modules
+Run scripts/status.sh <-v for verbose output / -u to monitor updates every second> to verify if modules are properly loaded and output states
+Run scripts/debug.sh <-r to run logs> to enable dynamic debug (run as root or after sudo -s)
+	Use | tee <filename> to redirect output to a file
+
+----------------------
+PCIe link information:
+----------------------
+
+Check PCIe gen/lane configurations:
+
+cat /sys/bus/pci/devices/0000:01:00.0/current_link_speed
+cat /sys/bus/pci/devices/0000:01:00.0/current_link_width
+
+Maximum speeds/lane width supported:
+
+cat /sys/bus/pci/devices/0000:01:00.0/max_link_speed
+cat /sys/bus/pci/devices/0000:01:00.0/max_link_width
+
+lspci -nvvv for verbose output
+lspci -x for config space reads (all FF reads suggest link is down/inaccessible)
+
+-----------------
+Power management:
+-----------------
+
+Modify Runtime PM:
+
+Disable: echo on > /sys/bus/pci/devices/0000:01:00.0/power/control
+Enable: echo auto > /sys/bus/pci/devices/0000:01:00.0/power/control
+Change timeout: echo > /sys/bus/pci/devices/0000:01:00.0/power/autosuspend_delay_ms
+
+Testing System PM:
+sudo rtcwake -m freeze -s 10 (Freeze and resume after 10 seconds)
+sudo rtcwake -m disk -s 10 (Freeze and resume after 10 seconds)
+
+-------------------------------
+MHI devices/client information:
+-------------------------------
+
+Use debugfs for general information: /sys/kernel/debug/mhi/mhi0
+
+Force EDL mode from host:
+echo 1 > /sys/bus/mhi/devives/mhi0/force_edl
+
+Trigger download of an image in EDL mode:
+echo 1 > /sys/bus/mhi/devives/mhi0/edl_download
+
+Force crash on device:
+echo c > /proc/sysrq-trigger (on device via console/ADB)
+
+Check serial number of SDX:
+cat /sys/bus/mhi/devices/mhi0/serial_number
+
+Available character devices can be found using:
+
+ls /dev | grep mhi
+ls /dev | grep wwan
+
+-------------
+Char devices:
+-------------
+
+EE: Mission mode:
+
+mhi0_LOOPBACK
+mhi0_QDSS
+mhi0_IP_HW_ADPL
+wwan0p1QCDM
+wwan0p2MBIM
+wwan0p3QMI
+wwan0p4AT
+
+EE: SBL:
+mhi0_SAHARA
+
+EE: FP (Flash Programmer):
+wwan0p1FIREHOSE
+
+-------------------
+Network interfaces:
+-------------------
+
+root@pcie-sw-3-linux:/dev# ifconfig -a | grep mhi
+
+mhi_hwip0: flags=144<POINTOPOINT,NOARP> mtu 16384
+mhi_swip0: flags=144<POINTOPOINT,NOARP> mtu 16384
+
+----------------
+Client examples:
+----------------
+
+Loopback test over UCI:
+
+cat /dev/mhi0_LOOPBACK (on host)
+while true; do cat /dev/mhi_pipe_0 | xargs -I % echo % > /dev/mhi_pipe_0; done (on device)
+while true; do echo hello > /dev/mhi0_LOOPBACK; sleep 1; done (from host)
+Verify if host receives 'hello' back each second
+CTRL+C on the device and host window (in that order) to stop the test
+
+QMI: sudo apt-get install libqmi-utils
+QMI command to retrieve device mode:
+
+$ sudo qmicli -d /dev/mhi0_QMI --dms-get-model [/dev/mhi0_QMI]
+	Device model retrieved: Model: 'FN980m'
+
+SW IP path:
+
+Setup IP addresses for MHI SW IP interfaces:
+	On Host: ifconfig mhi_swip0 192.168.1.172 up
+	On SDX: ifconfig mhi_swip0 192.168.1.173 up
+
+	Set IP forwarding on host: ip route add 192.168.1.173 via 192.168.1.172
+				or ip route add (device IP addr) via (host IP addr)
+
+	Do a ping test to make sure connectivity is OK and request/replies are being sent back and forth:
+	On host: ping 192.168.1.173
+	On SDX: ping 192.168.1.172
+
+ADB setup:
+	After above basic NW plumbing, do the following on device:
+		mount -o remount,rw /
+		mv /sbin/adbd /sbin/adbd_old
+		ps | grep adbd | grep -v grep
+		  390 root      0:00 /sbin/adbd
+		kill -9 390
+
+		Wait 10 seconds...
+
+		mv /sbin/adbd_old /sbin/adbd
+		/sbin/adbd &
+
+	On host:
+		adb connect 192.168.1.173:5555
+
+------------------
+Host example logs:
+------------------
+
+Power up:
+
+[88660.364724] NET: Registered protocol family 42
+[88660.378126] mhi-pci-generic 0000:01:00.0: BAR 0: assigned [mem 0xee801000-0xee801fff 64bit]
+[88660.378355] PM: Adding info for mhi:mhi0
+[88660.378422] mhi mhi0: Requested to power ON
+[88660.378573] mhi mhi0: Attempting power on with EE: MISSION MODE, state: READY
+[88660.378577] mhi mhi0: Power on setup success
+[88660.378595] mhi mhi0: Handling state transition: READY
+[88660.378598] mhi mhi0: Device in READY State
+[88660.378600] mhi mhi0: Initializing MHI registers
+[88660.508767] mhi mhi0: State change event to state: M0
+[88660.508854] mhi mhi0: Received EE event: MISSION MODE
+[88660.508920] mhi mhi0: Handling state transition: MISSION MODE
+[88660.508925] mhi mhi0: Processing Mission Mode transition
+[88660.509052] PM: Adding info for mhi:mhi0_LOOPBACK
+[88660.509246] PM: Adding info for No Bus:mhi0_LOOPBACK
+[88660.509431] mhi_uci mhi0_LOOPBACK: probed uci dev: LOOPBACK
+[88660.509561] PM: Adding info for mhi:mhi0_DIAG
+[88660.509624] PM: Adding info for No Bus:wwan0
+[88660.509658] PM: Adding info for No Bus:wwan0p1QCDM
+[88660.509812] PM: Adding info for mhi:mhi0_MBIM
+[88660.509886] PM: Adding info for No Bus:wwan0p2MBIM
+[88660.510053] PM: Adding info for mhi:mhi0_QMI
+[88660.510102] PM: Adding info for No Bus:wwan0p3QMI
+[88660.510241] PM: Adding info for mhi:mhi0_IPCR
+[88660.510318] qcom_mhi_qrtr mhi0_IPCR: 20: Updating channel state to: START
+[88660.512227] qcom_mhi_qrtr mhi0_IPCR: 20: Channel state change to START successful
+[88660.512267] qcom_mhi_qrtr mhi0_IPCR: 21: Updating channel state to: START
+[88660.515030] qcom_mhi_qrtr mhi0_IPCR: 21: Channel state change to START successful
+[88660.515571] qcom_mhi_qrtr mhi0_IPCR: Qualcomm MHI QRTR driver probed
+[88660.515661] PM: Adding info for mhi:mhi0_DUN
+[88660.515719] PM: Adding info for No Bus:wwan0p4AT
+[88660.518648] PM: Adding info for mhi:mhi0_IP_SW0
+[88660.518680] mhi_net mhi0_IP_SW0: 46: Updating channel state to: START
+[88660.521156] mhi_net mhi0_IP_SW0: 46: Channel state change to START successful
+[88660.521170] mhi_net mhi0_IP_SW0: 47: Updating channel state to: START
+[88660.522833] mhi_net mhi0_IP_SW0: 47: Channel state change to START successful
+[88660.522892] PM: Adding info for No Bus:mhi_swip0
+[88660.523062] PM: Adding info for mhi:mhi0_IP_HW0
+[88660.523089] mhi_net mhi0_IP_HW0: 100: Updating channel state to: START
+[88660.541423] mhi_net mhi0_IP_HW0: 100: Channel state change to START successful
+[88660.541439] mhi_net mhi0_IP_HW0: 101: Updating channel state to: START
+[88660.574646] mhi_net mhi0_IP_HW0: 101: Channel state change to START successful
+[88660.574726] PM: Adding info for No Bus:mhi_hwip0
+[88663.009148] mhi mhi0: Allowing M3 transition
+[88663.009155] mhi mhi0: Waiting for M3 completion
+[88663.037153] mhi mhi0: State change event to state: M3
+[88691.611214] mhi mhi0: Entered with PM state: M3, MHI state: M3
+[88691.626664] mhi mhi0: State change event to state: M0
+
+Power down:
+
+[88699.089910] mhi mhi0: Marking all events for chan: 21 as stale
+[88699.089915] mhi mhi0: Finished marking events as stale events
+[88699.090827] mhi mhi0: Marking all events for chan: 20 as stale
+[88699.090829] mhi mhi0: Finished marking events as stale events
+[88699.090857] qcom_mhi_qrtr mhi0_IPCR: 21: Updating channel state to: RESET
+[88699.093683] qcom_mhi_qrtr mhi0_IPCR: 21: Channel state change to RESET successful
+[88699.093688] mhi mhi0: Marking all events for chan: 21 as stale
+[88699.093690] mhi mhi0: Finished marking events as stale events
+[88699.093700] qcom_mhi_qrtr mhi0_IPCR: 21: successfully reset
+[88699.093702] qcom_mhi_qrtr mhi0_IPCR: 20: Updating channel state to: RESET
+[88699.122994] qcom_mhi_qrtr mhi0_IPCR: 20: Channel state change to RESET successful
+[88699.123003] mhi mhi0: Marking all events for chan: 20 as stale
+[88699.123005] mhi mhi0: Finished marking events as stale events
+[88699.123020] qcom_mhi_qrtr mhi0_IPCR: 20: successfully reset
+[88699.177538] mhi mhi0: Marking all events for chan: 33 as stale
+[88699.177542] mhi mhi0: Finished marking events as stale events
+[88699.177545] mhi mhi0: Marking all events for chan: 32 as stale
+[88699.177546] mhi mhi0: Finished marking events as stale events
+[88699.177722] PM: Removing info for No Bus:wwan0p4AT
+[88699.177786] mhi mhi0: Marking all events for chan: 15 as stale
+[88699.177788] mhi mhi0: Finished marking events as stale events
+[88699.177790] mhi mhi0: Marking all events for chan: 14 as stale
+[88699.177791] mhi mhi0: Finished marking events as stale events
+[88699.177891] PM: Removing info for No Bus:wwan0p3QMI
+[88699.177932] mhi mhi0: Marking all events for chan: 13 as stale
+[88699.177934] mhi mhi0: Finished marking events as stale events
+[88699.177936] mhi mhi0: Marking all events for chan: 12 as stale
+[88699.177937] mhi mhi0: Finished marking events as stale events
+[88699.178039] PM: Removing info for No Bus:wwan0p2MBIM
+[88699.178079] mhi mhi0: Marking all events for chan: 5 as stale
+[88699.178081] mhi mhi0: Finished marking events as stale events
+[88699.178083] mhi mhi0: Marking all events for chan: 4 as stale
+[88699.178085] mhi mhi0: Finished marking events as stale events
+[88699.178142] PM: Removing info for No Bus:wwan0p1QCDM
+[88699.178172] PM: Removing info for No Bus:wwan0
+[88699.268871] mhi mhi0: Marking all events for chan: 101 as stale
+[88699.268874] mhi mhi0: Finished marking events as stale events
+[88699.268875] mhi mhi0: Marking all events for chan: 100 as stale
+[88699.268876] mhi mhi0: Finished marking events as stale events
+[88699.269207] PM: Removing info for No Bus:mhi_hwip0
+[88699.307411] mhi_net mhi0_IP_HW0: 101: Updating channel state to: RESET
+[88699.309663] mhi_net mhi0_IP_HW0: 101: Channel state change to RESET successful
+[88699.309670] mhi mhi0: Marking all events for chan: 101 as stale
+[88699.309672] mhi mhi0: Finished marking events as stale events
+[88699.309685] mhi_net mhi0_IP_HW0: 101: successfully reset
+[88699.309688] mhi_net mhi0_IP_HW0: 100: Updating channel state to: RESET
+[88699.312132] mhi_net mhi0_IP_HW0: 100: Channel state change to RESET successful
+[88699.312138] mhi mhi0: Marking all events for chan: 100 as stale
+[88699.312140] mhi mhi0: Finished marking events as stale events
+[88699.312151] mhi_net mhi0_IP_HW0: 100: successfully reset
+[88699.312214] mhi mhi0: Marking all events for chan: 47 as stale
+[88699.312216] mhi mhi0: Finished marking events as stale events
+[88699.312219] mhi mhi0: Marking all events for chan: 46 as stale
+[88699.312222] mhi mhi0: Finished marking events as stale events
+[88699.312744] PM: Removing info for No Bus:mhi_swip0
+[88699.367228] mhi_net mhi0_IP_SW0: 47: Updating channel state to: RESET
+[88699.370416] mhi_net mhi0_IP_SW0: 47: Channel state change to RESET successful
+[88699.370423] mhi mhi0: Marking all events for chan: 47 as stale
+[88699.370426] mhi mhi0: Finished marking events as stale events
+[88699.370439] mhi_net mhi0_IP_SW0: 47: successfully reset
+[88699.370442] mhi_net mhi0_IP_SW0: 46: Updating channel state to: RESET
+[88699.414896] mhi_net mhi0_IP_SW0: 46: Channel state change to RESET successful
+[88699.414905] mhi mhi0: Marking all events for chan: 46 as stale
+[88699.414908] mhi mhi0: Finished marking events as stale events
+[88699.414922] mhi_net mhi0_IP_SW0: 46: successfully reset
+[88699.447871] mhi mhi0: Handling state transition: DISABLE
+[88699.447875] mhi mhi0: Processing disable transition with PM state: SHUTDOWN Process
+[88699.447877] mhi mhi0: Triggering MHI Reset in device
+[88700.383189] mhi mhi0: Waiting for all pending event ring processing to complete
+[88700.383257] mhi mhi0: Waiting for all pending threads to complete
+[88700.383260] mhi mhi0: Reset all active channels and remove MHI devices
+[88700.383268] mhi mhi0: destroy device for chan:LOOPBACK
+[88700.383320] mhi mhi0: Marking all events for chan: 1 as stale
+[88700.383323] mhi mhi0: Finished marking events as stale events
+[88700.383326] mhi mhi0: Marking all events for chan: 0 as stale
+[88700.383328] mhi mhi0: Finished marking events as stale events
+[88700.383505] PM: Removing info for No Bus:mhi0_LOOPBACK
+[88700.383598] PM: Removing info for mhi:mhi0_LOOPBACK
+[88700.383617] mhi mhi0: destroy device for chan:DIAG
+[88700.383647] PM: Removing info for mhi:mhi0_DIAG
+[88700.383664] mhi mhi0: destroy device for chan:MBIM
+[88700.383688] PM: Removing info for mhi:mhi0_MBIM
+[88700.383702] mhi mhi0: destroy device for chan:QMI
+[88700.383725] PM: Removing info for mhi:mhi0_QMI
+[88700.383740] mhi mhi0: destroy device for chan:IPCR
+[88700.383761] PM: Removing info for mhi:mhi0_IPCR
+[88700.383775] mhi mhi0: destroy device for chan:DUN
+[88700.383796] PM: Removing info for mhi:mhi0_DUN
+[88700.384065] mhi mhi0: destroy device for chan:IP_SW0
+[88700.384093] PM: Removing info for mhi:mhi0_IP_SW0
+[88700.384108] mhi mhi0: destroy device for chan:IP_HW0
+[88700.384131] PM: Removing info for mhi:mhi0_IP_HW0
+[88700.384146] mhi mhi0: Resetting EV CTXT and CMD CTXT
+[88700.384150] mhi mhi0: Exiting with PM state: DISABLE, MHI state: RESET
+[88700.384476] PM: Removing info for mhi:mhi0
+
+-------------------------------------------
+SDX65 IPC logs and other debug information:
+-------------------------------------------
+
+cat /sys/kernel/debug/mhi_sm/stats
+cat /sys/kernel/debug/ipc_logging/mhi/log_cont
+cat /sys/kernel/debug/ipc_logging/mhi_net/log_cont
+
+-------------
+Useful links:
+-------------
+
+https://www.kernel.org/doc/html/latest/kbuild/modules.html / https://www.kernel.org/doc/Documentation/kbuild/modules.txt
+http://embeddedguruji.blogspot.com/2019/04/kbuildextrasymbols-using-symbols.html
+https://www.dell.com/support/kbdoc/en-us/000175770/how-to-determine-the-pci-e-bus-speed-of-a-pci-e-card-in-a-redhat-based-linux-distribution
+MHI kernel doc: https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git/tree/Documentation/mhi/mhi.rst?h=next-20210507
+Topology: https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git/tree/Documentation/mhi/topology.rst?h=next-20210507
+http://www.reactivated.net/writing_udev_rules.html
+https://unix.stackexchange.com/questions/550037/how-does-udev-uevent-work
+https://askubuntu.com/questions/979856/how-can-i-see-udev-actions-at-runtime
+https://www.96boards.org/documentation/consumer/guides/qdl.md.html
