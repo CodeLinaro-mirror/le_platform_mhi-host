@@ -23,6 +23,7 @@
 #define MHI_POST_RESET_DELAY_MS 500
 
 #define HEALTH_CHECK_PERIOD (HZ * 2)
+#define CRASH_CHECK_PERIOD (HZ * 60)
 
 /**
  * struct mhi_pci_dev_info - MHI PCI device specific information
@@ -624,9 +625,18 @@ static void health_check(struct timer_list *t)
 	struct mhi_pci_device *mhi_pdev = from_timer(mhi_pdev, t, health_check_timer);
 	struct mhi_controller *mhi_cntrl = &mhi_pdev->mhi_cntrl;
 
-	if (!test_bit(MHI_PCI_DEV_STARTED, &mhi_pdev->status) ||
-			test_bit(MHI_PCI_DEV_SUSPENDED, &mhi_pdev->status))
+	if (!test_bit(MHI_PCI_DEV_STARTED, &mhi_pdev->status))
 		return;
+
+	/* If device is parked in d3hot, wake the device to check state */
+	if (test_bit(MHI_PCI_DEV_SUSPENDED, &mhi_pdev->status)) {
+		mhi_pci_runtime_get(mhi_cntrl);
+		mhi_pci_runtime_put(mhi_cntrl);
+
+		mod_timer(&mhi_pdev->health_check_timer,
+			  jiffies + CRASH_CHECK_PERIOD);
+		return;
+	}
 
 	if (!mhi_pci_is_alive(mhi_cntrl)) {
 		dev_err(mhi_cntrl->cntrl_dev, "Device died\n");
@@ -900,6 +910,9 @@ static int  __maybe_unused mhi_pci_runtime_suspend(struct device *dev)
 pci_suspend:
 	pci_disable_device(pdev);
 	pci_wake_from_d3(pdev, true);
+
+	/* start crash check timer for D3hot to D0 transitions */
+	mod_timer(&mhi_pdev->health_check_timer, jiffies + CRASH_CHECK_PERIOD);
 
 	return 0;
 }
