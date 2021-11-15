@@ -34,6 +34,7 @@ struct mhi_buf_info;
  * @MHI_CB_SYS_ERROR: MHI device entered error state (uses non-atomic context)
  * @MHI_CB_FATAL_ERROR: MHI device reset to a PBL exec env (uses atomic context)
  * @MHI_CB_BW_REQ: Received a bandwidth switch request from device
+ * @MHI_CB_FW_DL_ERR: MHI host could not find firmware or saw error with request
  */
 enum mhi_callback {
 	MHI_CB_IDLE,
@@ -45,6 +46,7 @@ enum mhi_callback {
 	MHI_CB_SYS_ERROR,
 	MHI_CB_FATAL_ERROR,
 	MHI_CB_BW_REQ,
+	MHI_CB_FW_DL_ERR,
 };
 
 /**
