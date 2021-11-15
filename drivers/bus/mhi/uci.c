@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.*/
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.*/
 
 #include <linux/kernel.h>
 #include <linux/mhi.h>
@@ -610,7 +610,10 @@ static void mhi_uci_remove(struct mhi_device *mhi_dev)
 
 /* .driver_data stores max mtu */
 static const struct mhi_device_id mhi_uci_match_table[] = {
-	{ .chan = "QMI", .driver_data = 0x1000},
+	{ .chan = "LOOPBACK", .driver_data = 0x1000},
+	{ .chan = "SAHARA", .driver_data = 0x8000},
+	{ .chan = "QDSS", .driver_data = 0x8000},
+	{ .chan = "IP_HW_ADPL", .driver_data = 0x8000},
 	{},
 };
 MODULE_DEVICE_TABLE(mhi, mhi_uci_match_table);
