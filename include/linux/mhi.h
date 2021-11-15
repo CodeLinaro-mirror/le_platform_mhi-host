@@ -30,6 +30,8 @@ struct mhi_buf_info;
  * @MHI_CB_LPM_ENTER: MHI host entered low power mode
  * @MHI_CB_LPM_EXIT: MHI host about to exit low power mode
  * @MHI_CB_EE_RDDM: MHI device entered RDDM exec env
+ * @MHI_CB_EE_EDL: MHI device entered Emergency Download Mode exec env
+ * @MHI_CB_EE_SBL: MHI device entered SBL execution environment
  * @MHI_CB_EE_MISSION_MODE: MHI device entered Mission Mode exec env
  * @MHI_CB_SYS_ERROR: MHI device entered error state (uses non-atomic context)
  * @MHI_CB_FATAL_ERROR: MHI device reset to a PBL exec env (uses atomic context)
@@ -42,6 +44,8 @@ enum mhi_callback {
 	MHI_CB_LPM_ENTER,
 	MHI_CB_LPM_EXIT,
 	MHI_CB_EE_RDDM,
+	MHI_CB_EE_EDL,
+	MHI_CB_EE_SBL,
 	MHI_CB_EE_MISSION_MODE,
 	MHI_CB_SYS_ERROR,
 	MHI_CB_FATAL_ERROR,
