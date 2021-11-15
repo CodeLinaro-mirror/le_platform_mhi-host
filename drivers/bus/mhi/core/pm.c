@@ -829,6 +829,25 @@ void mhi_pm_st_worker(struct work_struct *work)
 	}
 }
 
+static bool mhi_in_sys_error(struct mhi_controller *mhi_cntrl)
+{
+	enum mhi_pm_state cur_state;
+
+	if (mhi_get_mhi_state(mhi_cntrl) == MHI_STATE_SYS_ERR) {
+		write_lock_irq(&mhi_cntrl->pm_lock);
+		cur_state = mhi_tryset_pm_state(mhi_cntrl,
+						MHI_PM_SYS_ERR_DETECT);
+		write_unlock_irq(&mhi_cntrl->pm_lock);
+
+		if (cur_state == MHI_PM_SYS_ERR_DETECT) {
+			mhi_pm_sys_err_handler(mhi_cntrl);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int mhi_pm_suspend(struct mhi_controller *mhi_cntrl)
 {
 	struct mhi_chan *itr, *tmp;
@@ -934,21 +953,12 @@ int mhi_pm_resume(struct mhi_controller *mhi_cntrl)
 	if (MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state))
 		return -EIO;
 
-	if (mhi_get_mhi_state(mhi_cntrl) == MHI_STATE_SYS_ERR) {
-		/* If we are in SYS_ERR state, let MHI stack manages the error
-		 * and resume successfully.
-		 */
+	/* If we are in SYS_ERR state, let MHI stack manages the error
+	 * and resume successfully.
+	 */
+	if (mhi_in_sys_error(mhi_cntrl)) {
 		dev_warn(dev, "Entered error while suspended\n");
-
-		write_lock_irq(&mhi_cntrl->pm_lock);
-		cur_state = mhi_tryset_pm_state(mhi_cntrl,
-						MHI_PM_SYS_ERR_DETECT);
-		write_unlock_irq(&mhi_cntrl->pm_lock);
-
-		if (cur_state == MHI_PM_SYS_ERR_DETECT) {
-			mhi_pm_sys_err_handler(mhi_cntrl);
-			return 0;
-		}
+		return 0;
 	}
 
 	if (mhi_get_mhi_state(mhi_cntrl) != MHI_STATE_M3) {
@@ -987,6 +997,10 @@ int mhi_pm_resume(struct mhi_controller *mhi_cntrl)
 				 msecs_to_jiffies(mhi_cntrl->timeout_ms));
 
 	if (!ret || MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state)) {
+		if (mhi_in_sys_error(mhi_cntrl)) {
+			dev_warn(dev, "Entered error while suspended\n");
+			return 0;
+		}
 		dev_err(dev,
 			"Did not enter M0 state, MHI state: %s, PM state: %s\n",
 			TO_MHI_STATE_STR(mhi_cntrl->dev_state),
