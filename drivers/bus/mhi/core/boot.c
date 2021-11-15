@@ -475,7 +475,7 @@ error_pbl_load:
 	wake_up_all(&mhi_cntrl->state_event);
 }
 
-void mhi_edl_handler(struct mhi_controller *mhi_cntrl)
+void mhi_edl_handler(struct mhi_controller *mhi_cntrl, bool force)
 {
 	const struct firmware *firmware = NULL;
 	struct device *dev = &mhi_cntrl->mhi_dev->dev;
@@ -488,8 +488,8 @@ void mhi_edl_handler(struct mhi_controller *mhi_cntrl)
 		goto error_edl_load;
 	}
 
-	/* wait for controller to initiate the download if not set */
-	if (!mhi_cntrl->edl_download) {
+	/* wait for controller to initiate the download if not set or forced */
+	if (!mhi_cntrl->edl_download && !force) {
 		dev_err(dev, "Entered Emergency Download mode\n");
 		mhi_cntrl->status_cb(mhi_cntrl, MHI_CB_EE_EDL);
 		return;
@@ -558,3 +558,20 @@ int mhi_download_amss_image(struct mhi_controller *mhi_cntrl)
 
 	return ret;
 }
+
+int mhi_download_edl_image(struct mhi_controller *mhi_cntrl)
+{
+	struct device *dev = &mhi_cntrl->mhi_dev->dev;
+	int ret;
+
+	if (mhi_cntrl->ee != MHI_EE_EDL) {
+		dev_err(dev, "MHI is not in Emergency Download Mode\n");
+		return -EINVAL;
+	}
+
+	ret = mhi_queue_state_transition(mhi_cntrl,
+					 DEV_ST_TRANSITION_EDL_DLOAD);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mhi_download_edl_image);

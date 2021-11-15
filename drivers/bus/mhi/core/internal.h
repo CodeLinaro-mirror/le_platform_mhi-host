@@ -397,6 +397,7 @@ extern const char * const mhi_ee_str[MHI_EE_MAX];
 enum dev_st_transition {
 	DEV_ST_TRANSITION_PBL,
 	DEV_ST_TRANSITION_EDL,
+	DEV_ST_TRANSITION_EDL_DLOAD,
 	DEV_ST_TRANSITION_READY,
 	DEV_ST_TRANSITION_SBL,
 	DEV_ST_TRANSITION_MISSION_MODE,
@@ -685,7 +686,7 @@ void mhi_deinit_free_irq(struct mhi_controller *mhi_cntrl);
 int mhi_rddm_prepare(struct mhi_controller *mhi_cntrl,
 		      struct image_info *img_info);
 void mhi_pbl_handler(struct mhi_controller *mhi_cntrl);
-void mhi_edl_handler(struct mhi_controller *mhi_cntrl);
+void mhi_edl_handler(struct mhi_controller *mhi_cntrl, bool force);
 int mhi_prepare_channel(struct mhi_controller *mhi_cntrl,
 			struct mhi_chan *mhi_chan);
 int mhi_init_chan_ctxt(struct mhi_controller *mhi_cntrl,

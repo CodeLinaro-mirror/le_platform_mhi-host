@@ -678,6 +678,12 @@ int mhi_pm_resume(struct mhi_controller *mhi_cntrl);
 int mhi_download_rddm_image(struct mhi_controller *mhi_cntrl, bool in_panic);
 
 /**
+ * mhi_download_edl_image - Download EDL image for device using BHI
+ * @mhi_cntrl: MHI controller
+ */
+int mhi_download_edl_image(struct mhi_controller *mhi_cntrl);
+
+/**
  * mhi_force_rddm_mode - Force device into rddm mode
  * @mhi_cntrl: MHI controller
  */

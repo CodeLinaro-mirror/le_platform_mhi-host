@@ -783,7 +783,10 @@ void mhi_pm_st_worker(struct work_struct *work)
 			mhi_pbl_handler(mhi_cntrl);
 			break;
 		case DEV_ST_TRANSITION_EDL:
-			mhi_edl_handler(mhi_cntrl);
+			mhi_edl_handler(mhi_cntrl, false);
+			break;
+		case DEV_ST_TRANSITION_EDL_DLOAD:
+			mhi_edl_handler(mhi_cntrl, true);
 			break;
 		case DEV_ST_TRANSITION_SBL:
 			write_lock_irq(&mhi_cntrl->pm_lock);
