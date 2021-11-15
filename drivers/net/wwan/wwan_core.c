@@ -49,8 +49,6 @@ struct wwan_device {
  * @dev: Underlying device
  * @rxq: Buffer inbound queue
  * @waitqueue: The waitqueue for port fops (read/write/poll)
- * @data_lock: Port specific data access serialization
- * @at_data: AT port specific data
  */
 struct wwan_port {
 	enum wwan_port_type type;
@@ -61,13 +59,6 @@ struct wwan_port {
 	struct device dev;
 	struct sk_buff_head rxq;
 	wait_queue_head_t waitqueue;
-	struct mutex data_lock;	/* Port specific data access serialization */
-	union {
-		struct {
-			struct ktermios termios;
-			int mdmbits;
-		} at_data;
-	};
 };
 
 static ssize_t index_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -241,7 +232,7 @@ static void wwan_port_destroy(struct device *dev)
 	struct wwan_port *port = to_wwan_port(dev);
 
 	ida_free(&minors, MINOR(port->dev.devt));
-	mutex_destroy(&port->data_lock);
+	skb_queue_purge(&port->rxq);
 	mutex_destroy(&port->ops_lock);
 	kfree(port);
 }
@@ -355,7 +346,6 @@ struct wwan_port *wwan_create_port(struct device *parent,
 	mutex_init(&port->ops_lock);
 	skb_queue_head_init(&port->rxq);
 	init_waitqueue_head(&port->waitqueue);
-	mutex_init(&port->data_lock);
 
 	port->dev.parent = &wwandev->dev;
 	port->dev.class = wwan_class;
