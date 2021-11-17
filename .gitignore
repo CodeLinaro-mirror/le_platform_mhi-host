@@ -49,6 +49,8 @@
 *.zst
 Module.symvers
 modules.order
+modules.builtin
+out
 
 #
 # Top-level generic files
