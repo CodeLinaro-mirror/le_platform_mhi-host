@@ -1918,10 +1918,11 @@ void mhi_unprepare_from_transfer(struct mhi_device *mhi_dev)
 }
 EXPORT_SYMBOL_GPL(mhi_unprepare_from_transfer);
 
-int mhi_poll(struct mhi_device *mhi_dev, u32 budget)
+int mhi_poll(struct mhi_device *mhi_dev, u32 budget, enum dma_data_direction dir)
 {
 	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
-	struct mhi_chan *mhi_chan = mhi_dev->dl_chan;
+	struct mhi_chan *mhi_chan = (dir == DMA_TO_DEVICE) ? mhi_dev->ul_chan :
+				    mhi_dev->dl_chan;
 	struct mhi_event *mhi_event = &mhi_cntrl->mhi_event[mhi_chan->er_index];
 	int ret;
 

@@ -805,8 +805,9 @@ void mhi_unprepare_from_transfer(struct mhi_device *mhi_dev);
  * mhi_poll - Poll for any available data in DL direction
  * @mhi_dev: Device associated with the channels
  * @budget: # of events to process
+ * @dir: Direction of the channels in which to poll for (UL/DL)
  */
-int mhi_poll(struct mhi_device *mhi_dev, u32 budget);
+int mhi_poll(struct mhi_device *mhi_dev, u32 budget, enum dma_data_direction dir);
 
 /**
  * mhi_queue_dma - Send or receive DMA mapped buffers from client device
