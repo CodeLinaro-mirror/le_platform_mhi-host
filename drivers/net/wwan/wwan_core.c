@@ -67,7 +67,7 @@ static ssize_t index_show(struct device *dev, struct device_attribute *attr, cha
 {
 	struct wwan_device *wwan = to_wwan_dev(dev);
 
-	return sprintf(buf, "%d\n", wwan->id);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", wwan->id);
 }
 static DEVICE_ATTR_RO(index);
 
@@ -197,7 +197,7 @@ static ssize_t type_show(struct device *dev, struct device_attribute *attr,
 {
 	struct wwan_port *port = to_wwan_port(dev);
 
-	return sprintf(buf, "%s\n", wwan_port_type_str[port->type]);
+	return scnprintf(buf, PAGE_SIZE, "%s\n", wwan_port_type_str[port->type]);
 }
 static DEVICE_ATTR_RO(type);
 
