@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Canonical Ltd
 name: imx-kernel
 summary: i.mx linux kernel
 description: The i.MX Ubuntu kernel package as a snap
