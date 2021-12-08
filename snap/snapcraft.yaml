@@ -152,6 +152,17 @@ parts:
             ./firmware-qca.bin --force --auto-accept
             cp -r firmware-*/1PJ_QCA9377-3_LEA_3.0/lib/firmware ${SNAPCRAFT_PART_INSTALL}
 
+    # optee signing keys: used for signing ot Trusted Applications
+    optee-keys:
+        plugin: dump
+        source: https://git.launchpad.net/~ondrak/+git/dev-keys
+        source-type: git
+        source-branch: ta-keys
+        organize:
+            '*': ta-keys/
+        prime:
+             - -*
+
     optee-os:
         after:
             - optee-uc-fde
