@@ -214,6 +214,15 @@ parts:
         prime:
             - usr/lib/lib*so*
 
+    optee-uc-fde:
+        plugin: dump
+        source: https://git.launchpad.net/~ondrak/+git/optee-uc-fde
+        source-type: git
+        organize:
+            '*': optee-uc-fde/
+        prime:
+            - -*
+
 build-packages:
     - bison
     - device-tree-compiler
