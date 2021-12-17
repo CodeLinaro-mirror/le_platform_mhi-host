@@ -73,7 +73,7 @@ cp scripts/debug.sh $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/etc/mhi_dynamicdebug.sh
 
 if [[ ! -f "out/install.sh" ]]; then
 	echo "#!/bin/bash" > out/install.sh
-	echo "This file was auto-generated using cross_compile.sh script." >> out/install.sh
+	echo "# This file was auto-generated using cross_compile.sh script." >> out/install.sh
 	echo "supported_kernels() {" >> out/install.sh
 	echo "echo Supported kernel versions:" >> out/install.sh
 	echo "echo $MHI_KERNEL_VER" >> out/install.sh
@@ -118,7 +118,7 @@ fi
 
 if [[ ! -f "out/uninstall.sh" ]]; then
 	echo "#!/bin/bash" > out/uninstall.sh
-	echo "This file was auto-generated using cross_compile.sh script." >> out/uninstall.sh
+	echo "# This file was auto-generated using cross_compile.sh script." >> out/uninstall.sh
 	echo "if [ \$$root_id -ne 0 ] ; then echo \"Please run as root\" ; exit 1 ; fi" >> out/uninstall.sh
 	find . -path ./drivers/bus/mhi -prune -false -o -name *.ko | grep -v "out" | tac | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % echo "modprobe -qr %" >> out/uninstall.sh
 	find ./drivers/bus/mhi -name *.ko | tac | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % echo "modprobe -qr %" >> out/uninstall.sh
