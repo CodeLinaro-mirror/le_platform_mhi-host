@@ -167,6 +167,9 @@ static ssize_t force_edl_store(struct device *dev,
 	if (!val)
 		return count;
 
+	if (mhi_cntrl->ee == MHI_EE_EDL)
+		return count;
+
 	ret = mhi_device_get_sync(mhi_cntrl->mhi_dev);
 	if (ret)
 		return ret;

@@ -570,6 +570,14 @@ int mhi_download_edl_image(struct mhi_controller *mhi_cntrl)
 		return -EINVAL;
 	}
 
+	/* Reset state before we proceed as prior attempts could have failed */
+	if (mhi_cntrl->pm_state == MHI_PM_FW_DL_ERR) {
+		write_lock_irq(&mhi_cntrl->pm_lock);
+		mhi_cntrl->pm_state = MHI_PM_POR;
+		mhi_cntrl->dev_state = MHI_STATE_READY;
+		write_unlock_irq(&mhi_cntrl->pm_lock);
+	}
+
 	ret = mhi_queue_state_transition(mhi_cntrl,
 					 DEV_ST_TRANSITION_EDL_DLOAD);
 
