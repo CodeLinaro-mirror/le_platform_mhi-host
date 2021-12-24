@@ -1,5 +1,5 @@
 #Allow permissions to trigger entry to EDL (Emergency Download Mode) and download of an image in the EDL execution environment
 ACTION=="add", KERNEL=="mhi[0-9]*",
-SUBSYSTEM=="mhi", RUN+="/bin/chmod a+w /sys/bus/mhi/devices/mhi%n/edl_download /sys/bus/mhi/devices/mhi%n/force_edl"
+SUBSYSTEM=="mhi", RUN+="/bin/chmod -R a+w /sys/bus/mhi/devices/mhi%n/edl_download /sys/bus/mhi/devices/mhi%n/force_edl /lib/firmware/qcom"
 SUBSYSTEM=="mhi_uci", MODE="0666"
 SUBSYSTEM=="wwan", MODE="0666"
