@@ -38,6 +38,7 @@ echo "Installing drivers..."
 cd $MHI_BUILD_ROOT
 find . -path ./out -prune -false -o -name *.ko | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % echo % >> /etc/modules
 find . -path ./out -prune -false -o -name *.ko | xargs -I % cp --parents % /lib/modules/$MHI_KERNEL_VER/kernel/
+mkdir -p /lib/firmware/qcom/sdx65m
 cp build/99-mhi-permissions.rules /etc/udev/rules.d/
 udevadm control --reload
 cp scripts/debug.sh /etc/mhi_dynamicdebug.sh
