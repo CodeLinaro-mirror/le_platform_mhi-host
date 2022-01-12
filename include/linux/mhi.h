@@ -480,6 +480,12 @@ struct mhi_controller {
 			  u32 val);
 	void (*reset)(struct mhi_controller *mhi_cntrl);
 
+	/* get VF number in case of SR-IOV capable mhi controller */
+	int (*get_device_instance_id)(struct mhi_controller *mhi_cntrl);
+
+	/* get bus number of the mhi controller */
+	int (*get_device_bus_number)(struct mhi_controller *mhi_cntrl);
+
 	size_t buffer_len;
 	size_t max_tre_len;
 	int index;
@@ -856,6 +862,19 @@ int mhi_queue_buf(struct mhi_device *mhi_dev, enum dma_data_direction dir,
  */
 int mhi_queue_skb(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 		  struct sk_buff *skb, size_t len, enum mhi_flags mflags);
+
+/**
+ * mhi_get_device_instance_id - Get the VF number of a mhi device
+ * @mhi_cntrl: MHI controller capable of SR-IOV
+ */
+int mhi_get_device_instance_id(struct mhi_controller *mhi_cntrl);
+
+
+/**
+ * mhi_get_device_bus_number - Get the mhi device bus number
+ * @mhi_cntrl: MHI controller
+ */
+int mhi_get_device_bus_number(struct mhi_controller *mhi_cntrl);
 
 /**
  * mhi_queue_is_full - Determine whether queueing new elements is possible

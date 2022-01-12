@@ -185,6 +185,24 @@ void mhi_ring_chan_db(struct mhi_controller *mhi_cntrl,
 				    ring->db_addr, db);
 }
 
+int mhi_get_device_instance_id(struct mhi_controller *mhi_cntrl)
+{
+	if (mhi_cntrl->get_device_instance_id)
+		return mhi_cntrl->get_device_instance_id(mhi_cntrl);
+
+	return -EOPNOTSUPP;
+}
+EXPORT_SYMBOL_GPL(mhi_get_device_instance_id);
+
+int mhi_get_device_bus_number(struct mhi_controller *mhi_cntrl)
+{
+	if (mhi_cntrl->get_device_bus_number)
+		return mhi_cntrl->get_device_bus_number(mhi_cntrl);
+
+	return -ENODEV;
+}
+EXPORT_SYMBOL_GPL(mhi_get_device_bus_number);
+
 enum mhi_ee_type mhi_get_exec_env(struct mhi_controller *mhi_cntrl)
 {
 	u32 exec;
