@@ -703,6 +703,23 @@ static void health_check(struct timer_list *t)
 	mod_timer(&mhi_pdev->health_check_timer, jiffies + HEALTH_CHECK_PERIOD);
 }
 
+static int mhi_pci_get_vf_num(struct mhi_controller *mhi_cntrl)
+{
+	struct pci_dev *pdev = to_pci_dev(mhi_cntrl->cntrl_dev);
+
+	if (pdev->is_virtfn)
+		return PCI_FUNC(pdev->devfn);
+
+	return -EOPNOTSUPP;
+}
+
+static int mhi_pci_get_bus_num(struct mhi_controller *mhi_cntrl)
+{
+	struct pci_dev *pdev = to_pci_dev(mhi_cntrl->cntrl_dev);
+
+	return pci_domain_nr(pdev->bus);
+}
+
 static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	const struct mhi_pci_dev_info *info = (struct mhi_pci_dev_info *) id->driver_data;
@@ -767,6 +784,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	err = mhi_register_controller(mhi_cntrl, mhi_cntrl_config);
 	if (err)
 		goto err_disable_reporting;
+
+	/* call backs to pass pci bus number and VF num if SR-IOV is enabled */
+	mhi_cntrl->get_device_instance_id = mhi_pci_get_vf_num;
+	mhi_cntrl->get_device_bus_number = mhi_pci_get_bus_num;
 
 	/* MHI bus does not power up the controller by default */
 	err = mhi_prepare_for_power_up(mhi_cntrl);
