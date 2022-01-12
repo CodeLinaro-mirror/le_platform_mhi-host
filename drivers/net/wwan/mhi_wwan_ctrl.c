@@ -109,6 +109,8 @@ static int mhi_wwan_ctrl_start(struct wwan_port *port)
 	struct mhi_wwan_dev *mhiwwan = wwan_port_get_drvdata(port);
 	int ret;
 
+	dev_dbg(&mhiwwan->mhi_dev->dev, "%s: starting channels\n", __func__);
+
 	/* Start mhi device's channel(s) */
 	ret = mhi_prepare_for_transfer(mhiwwan->mhi_dev, 0);
 	if (ret)
@@ -136,6 +138,7 @@ static void mhi_wwan_ctrl_stop(struct wwan_port *port)
 
 	cancel_work_sync(&mhiwwan->rx_refill);
 
+	dev_dbg(&mhiwwan->mhi_dev->dev, "%s: stopping channels\n", __func__);
 	mhi_unprepare_from_transfer(mhiwwan->mhi_dev);
 }
 
