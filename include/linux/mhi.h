@@ -493,6 +493,7 @@ struct mhi_controller {
  * @ul_chan_id: MHI channel id for UL transfer
  * @dl_chan_id: MHI channel id for DL transfer
  * @dev_wake: Device wakeup counter
+ * @tiocm: Device current terminal settings
  */
 struct mhi_device {
 	const struct mhi_device_id *id;
@@ -505,6 +506,7 @@ struct mhi_device {
 	int ul_chan_id;
 	int dl_chan_id;
 	u32 dev_wake;
+	u32 tiocm;
 };
 
 /**
@@ -826,6 +828,17 @@ int mhi_queue_skb(struct mhi_device *mhi_dev, enum dma_data_direction dir,
  * @dir: DMA direction for the channel
  */
 bool mhi_queue_is_full(struct mhi_device *mhi_dev, enum dma_data_direction dir);
+
+/**
+ * mhi_get_device_for_channel - get the MHI device for a specific channel number
+ * @mhi_cntrl: MHI controller
+ * @channel - channel number
+ *
+ * Returns:
+ * Pointer to the MHI device associated with the channel
+ */
+struct mhi_device *mhi_get_device_for_channel(struct mhi_controller *mhi_cntrl,
+					      u32 channel);
 
 /* see Documentation/timers/timers-howto.rst for the thresholds */
 static inline void fsleep(unsigned long usecs)
