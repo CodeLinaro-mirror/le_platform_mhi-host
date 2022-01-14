@@ -3,7 +3,7 @@
 # Makefile for the Linux WWAN device drivers.
 #
 
-obj-m += wwan.o wwan_mhi.o
+obj-m += wwan.o dtr_mhi.o wwan_mhi.o
 
 KBUILD_EXTRA_SYMBOLS:= $(MHI_BUILD_ROOT)/drivers/bus/mhi/Module.symvers
 
@@ -14,4 +14,5 @@ clean:
 
 ccflags-y := -I$(MHI_BUILD_ROOT)/include -Wall
 wwan-y := wwan_core.o
+dtr_mhi-y := mhi_dtr.o
 wwan_mhi-y := mhi_wwan_ctrl.o
