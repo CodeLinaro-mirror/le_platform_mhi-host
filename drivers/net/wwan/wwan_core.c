@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2021, Linaro Ltd <loic.poulain@linaro.org> */
+/* Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved. */
 
 #include <linux/err.h>
 #include <linux/errno.h>
@@ -402,6 +403,43 @@ out_unlock:
 	return ret;
 }
 
+static long wwan_port_op_ioctl(struct wwan_port *port, unsigned int cmd,
+			       unsigned long arg)
+{
+	long ret = -ENOIOCTLCMD;
+
+	mutex_lock(&port->ops_lock);
+	if (!port->ops) { /* Port got unplugged */
+		ret = -ENODEV;
+		goto out_unlock;
+	}
+
+	if (port->start_count)
+		ret = port->ops->ioctl(port, cmd, arg);
+
+out_unlock:
+	mutex_unlock(&port->ops_lock);
+
+	return ret;
+}
+
+static bool wwan_port_op_tiocm(struct wwan_port *port)
+{
+	bool ret = false;
+
+	mutex_lock(&port->ops_lock);
+	if (!port->ops) /* Port got unplugged */
+		goto out_unlock;
+
+	if (port->start_count)
+		ret = port->ops->tiocm(port);
+
+out_unlock:
+	mutex_unlock(&port->ops_lock);
+
+	return ret;
+}
+
 static bool is_read_blocked(struct wwan_port *port)
 {
 	return skb_queue_empty(&port->rxq) && port->ops;
@@ -543,8 +581,18 @@ static __poll_t wwan_port_fops_poll(struct file *filp, poll_table *wait)
 		mask |= EPOLLIN | EPOLLRDNORM;
 	if (!port->ops)
 		mask |= EPOLLHUP | EPOLLERR;
+	if (wwan_port_op_tiocm(port))
+		mask |= EPOLLPRI;
 
 	return mask;
+}
+
+static long wwan_port_ioctl(struct file *filp, unsigned int cmd,
+			    unsigned long arg)
+{
+	struct wwan_port *port = filp->private_data;
+
+	return wwan_port_op_ioctl(port, cmd, arg);
 }
 
 static const struct file_operations wwan_port_fops = {
@@ -555,6 +603,7 @@ static const struct file_operations wwan_port_fops = {
 	.write = wwan_port_fops_write,
 	.poll = wwan_port_fops_poll,
 	.llseek = noop_llseek,
+	.unlocked_ioctl = wwan_port_ioctl,
 };
 
 static int __init wwan_init(void)

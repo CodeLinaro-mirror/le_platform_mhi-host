@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2021, Linaro Ltd <loic.poulain@linaro.org> */
+/* Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved. */
 #include <linux/kernel.h>
 #include <linux/mhi.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
+#include <linux/termios.h>
 #include <linux/wwan.h>
 
 /* MHI wwan flags */
@@ -23,9 +25,13 @@ struct mhi_wwan_dev {
 	/* State and capabilities */
 	unsigned long flags;
 	size_t mtu;
+	u32 tiocm;
 
 	/* Protect against concurrent TX and TX-completion (bh) */
 	spinlock_t tx_lock;
+
+	/* Protect tiocm state update */
+	spinlock_t tiocm_lock;
 
 	/* Protect RX budget and rx_refill scheduling */
 	spinlock_t rx_lock;
@@ -37,6 +43,9 @@ struct mhi_wwan_dev {
 	 */
 	unsigned int rx_budget;
 };
+
+extern long mhi_dtr_ioctl(struct mhi_device *mhi_dev, unsigned int cmd,
+			  unsigned long arg);
 
 /* Increment RX budget and schedule RX refill if necessary */
 static void mhi_wwan_rx_budget_inc(struct mhi_wwan_dev *mhiwwan)
@@ -116,6 +125,11 @@ static int mhi_wwan_ctrl_start(struct wwan_port *port)
 	if (ret)
 		return ret;
 
+	/* copy tiocm for local reference */
+	spin_lock_bh(&mhiwwan->tiocm_lock);
+	mhiwwan->tiocm = mhiwwan->mhi_dev->tiocm;
+	spin_unlock_bh(&mhiwwan->tiocm_lock);
+
 	/* Don't allocate more buffers than MHI channel queue size */
 	mhiwwan->rx_budget = mhi_get_free_desc_count(mhiwwan->mhi_dev, DMA_FROM_DEVICE);
 
@@ -163,10 +177,42 @@ static int mhi_wwan_ctrl_tx(struct wwan_port *port, struct sk_buff *skb)
 	return ret;
 }
 
+static long mhi_wwan_ctrl_ioctl(struct wwan_port *port, unsigned int cmd,
+				unsigned long arg)
+{
+	struct mhi_wwan_dev *mhiwwan = wwan_port_get_drvdata(port);
+	struct mhi_device *mhi_dev = mhiwwan->mhi_dev;
+	long ret;
+
+	if (cmd == TIOCMGET) {
+		spin_lock_bh(&mhiwwan->tiocm_lock);
+		ret = mhiwwan->tiocm;
+		spin_unlock_bh(&mhiwwan->tiocm_lock);
+	} else if (cmd == TIOCMSET) {
+		ret = mhi_dtr_ioctl(mhiwwan->mhi_dev, cmd, arg);
+		if (!ret) {
+			spin_lock_bh(&mhiwwan->tiocm_lock);
+			mhiwwan->tiocm = mhi_dev->tiocm;
+			spin_unlock_bh(&mhiwwan->tiocm_lock);
+		}
+	}
+
+	return ret;
+}
+
+static bool mhi_wwan_ctrl_tiocm(struct wwan_port *port)
+{
+	struct mhi_wwan_dev *mhiwwan = wwan_port_get_drvdata(port);
+
+	return mhiwwan->tiocm;
+}
+
 static const struct wwan_port_ops wwan_pops = {
 	.start = mhi_wwan_ctrl_start,
 	.stop = mhi_wwan_ctrl_stop,
 	.tx = mhi_wwan_ctrl_tx,
+	.ioctl = mhi_wwan_ctrl_ioctl,
+	.tiocm = mhi_wwan_ctrl_tiocm,
 };
 
 static void mhi_ul_xfer_cb(struct mhi_device *mhi_dev,
@@ -230,6 +276,7 @@ static int mhi_wwan_ctrl_probe(struct mhi_device *mhi_dev,
 	INIT_WORK(&mhiwwan->rx_refill, mhi_wwan_ctrl_refill_work);
 	spin_lock_init(&mhiwwan->tx_lock);
 	spin_lock_init(&mhiwwan->rx_lock);
+	spin_lock_init(&mhiwwan->tiocm_lock);
 
 	if (mhi_dev->dl_chan)
 		set_bit(MHI_WWAN_DL_CAP, &mhiwwan->flags);
@@ -259,6 +306,18 @@ static void mhi_wwan_ctrl_remove(struct mhi_device *mhi_dev)
 	kfree(mhiwwan);
 }
 
+static void mhi_wwan_ctrl_status_cb(struct mhi_device *mhi_dev, enum mhi_callback reason)
+{
+	struct mhi_wwan_dev *mhiwwan = dev_get_drvdata(&mhi_dev->dev);
+	unsigned long flags;
+
+	if (reason == MHI_CB_DTR_SIGNAL) {
+		spin_lock_irqsave(&mhiwwan->tiocm_lock, flags);
+		mhiwwan->tiocm = mhi_dev->tiocm;
+		spin_unlock_irqrestore(&mhiwwan->tiocm_lock, flags);
+	}
+}
+
 static const struct mhi_device_id mhi_wwan_ctrl_match_table[] = {
 	{ .chan = "DUN", .driver_data = WWAN_PORT_AT },
 	{ .chan = "MBIM", .driver_data = WWAN_PORT_MBIM },
@@ -275,6 +334,7 @@ static struct mhi_driver mhi_wwan_ctrl_driver = {
 	.probe = mhi_wwan_ctrl_probe,
 	.ul_xfer_cb = mhi_ul_xfer_cb,
 	.dl_xfer_cb = mhi_dl_xfer_cb,
+	.status_cb = mhi_wwan_ctrl_status_cb,
 	.driver = {
 		.name = "mhi_wwan_ctrl",
 	},

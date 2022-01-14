@@ -40,6 +40,8 @@ struct wwan_port;
  * @start: The routine for starting the WWAN port device.
  * @stop: The routine for stopping the WWAN port device.
  * @tx: The routine that sends WWAN port protocol data to the device.
+ * @ioctl: The routine that issues terminal updates for WWAN port to the device.
+ * @tiocm: The routine that checks if terminal state is set for WWAN port.
  *
  * The wwan_port_ops structure contains a list of low-level operations
  * that control a WWAN port device. All functions are mandatory.
@@ -48,6 +50,8 @@ struct wwan_port_ops {
 	int (*start)(struct wwan_port *port);
 	void (*stop)(struct wwan_port *port);
 	int (*tx)(struct wwan_port *port, struct sk_buff *skb);
+	long (*ioctl)(struct wwan_port *port, unsigned int cmd, unsigned long arg);
+	bool (*tiocm)(struct wwan_port *port);
 };
 
 /**
