@@ -238,6 +238,8 @@ static const struct mhi_channel_config modem_qcom_v1_mhi_channels[] = {
 	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 4, 0),
 	MHI_CHANNEL_CONFIG_UL(14, "QMI", 4, 0),
 	MHI_CHANNEL_CONFIG_DL(15, "QMI", 4, 0),
+	MHI_CHANNEL_CONFIG_UL(18, "IP_CTRL", 8, 1),
+	MHI_CHANNEL_CONFIG_DL(19, "IP_CTRL", 8, 1),
 	MHI_CHANNEL_CONFIG_UL(20, "IPCR", 32, 3),
 	MHI_CHANNEL_CONFIG_DL(21, "IPCR", 32, 3),
 	MHI_CHANNEL_CONFIG_UL(32, "DUN", 32, 3),
