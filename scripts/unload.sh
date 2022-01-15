@@ -23,9 +23,11 @@ lsmod | grep mhi_net
 
 unload_wwan() {
 rmmod wwan_mhi
+rmmod dtr_mhi
 rmmod wwan
 
 lsmod | grep mhi_wwan
+lsmod | grep dtr_mhi
 }
 
 unload_qrtr() {

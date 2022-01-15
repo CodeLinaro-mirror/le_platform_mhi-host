@@ -23,6 +23,7 @@ echo -n "file proto_mbim.c +p" > /sys/kernel/debug/dynamic_debug/control
 debug_wwan() {
 echo -n "file wwan_core.c +p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "file mhi_wwan_ctrl.c +p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "file mhi_dtr.c +p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 debug_qrtr() {

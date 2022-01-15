@@ -61,17 +61,23 @@ if ! insmod drivers/net/wwan/wwan.ko; then
 	echo "Failed to load KO"
 	exit 1
 fi
+if ! insmod drivers/net/wwan/dtr_mhi.ko; then
+	echo "Failed to load KO"
+	exit 1
+fi
 if ! insmod drivers/net/wwan/wwan_mhi.ko; then
 	echo "Failed to load KO"
 	exit 1
 fi
 
 lsmod | grep wwan
+lsmod | grep dtr
 }
 
 debug_wwan() {
 echo -n "file wwan_core.c +p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "file mhi_wwan_ctrl.c +p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "file mhi_dtr.c +p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 load_qrtr() {
