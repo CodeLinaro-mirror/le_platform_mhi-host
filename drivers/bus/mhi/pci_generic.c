@@ -211,13 +211,13 @@ struct mhi_pci_dev_info {
 		.offload_channel = false,	\
 	}
 
-#define MHI_EVENT_CONFIG_HW_DATA(ev_ring, el_count, ch_num) \
+#define MHI_EVENT_CONFIG_HW_DATA(ev_ring, el_count, ch_num, dbmode) \
 	{					\
 		.num_elements = el_count,	\
 		.irq_moderation_ms = 5,		\
 		.irq = (ev_ring) + 1,		\
 		.priority = 1,			\
-		.mode = MHI_DB_BRST_DISABLE,	\
+		.mode = dbmode,			\
 		.data_type = MHI_ER_DATA,	\
 		.hardware_event = true,		\
 		.client_managed = false,	\
@@ -259,9 +259,9 @@ static struct mhi_event_config modem_qcom_v1_mhi_events[] = {
 	MHI_EVENT_CONFIG_DATA(2, 64),
 	MHI_EVENT_CONFIG_DATA(3, 64),
 	/* Hardware channels request dedicated hardware event rings */
-	MHI_EVENT_CONFIG_HW_DATA(4, 1024, 100),
-	MHI_EVENT_CONFIG_HW_DATA(5, 2048, 101),
-	MHI_EVENT_CONFIG_HW_DATA(6, 1024, 102),
+	MHI_EVENT_CONFIG_HW_DATA(4, 1024, 100, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(5, 2048, 101, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(6, 1024, 102, MHI_DB_BRST_DISABLE),
 };
 
 static const struct mhi_controller_config modem_qcom_v1_mhiv_config = {
@@ -323,8 +323,8 @@ static const struct mhi_channel_config mhi_quectel_em1xx_channels[] = {
 static struct mhi_event_config mhi_quectel_em1xx_events[] = {
 	MHI_EVENT_CONFIG_CTRL(0, 128),
 	MHI_EVENT_CONFIG_DATA(1, 128),
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100),
-	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101)
+	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101, MHI_DB_BRST_ENABLE),
 };
 
 static const struct mhi_controller_config modem_quectel_em1xx_config = {
@@ -362,8 +362,8 @@ static const struct mhi_channel_config mhi_foxconn_sdx55_channels[] = {
 static struct mhi_event_config mhi_foxconn_sdx55_events[] = {
 	MHI_EVENT_CONFIG_CTRL(0, 128),
 	MHI_EVENT_CONFIG_DATA(1, 128),
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100),
-	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101)
+	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101, MHI_DB_BRST_ENABLE),
 };
 
 static const struct mhi_controller_config modem_foxconn_sdx55_config = {
@@ -400,8 +400,8 @@ static const struct mhi_channel_config mhi_mv31_channels[] = {
 static struct mhi_event_config mhi_mv31_events[] = {
 	MHI_EVENT_CONFIG_CTRL(0, 256),
 	MHI_EVENT_CONFIG_DATA(1, 256),
-	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100),
-	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101),
+	MHI_EVENT_CONFIG_HW_DATA(2, 1024, 100, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(3, 1024, 101, MHI_DB_BRST_ENABLE),
 };
 
 static const struct mhi_controller_config modem_mv31_config = {
