@@ -92,6 +92,7 @@ if [[ ! -f "out/install.sh" ]]; then
 	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh\") 2>/dev/null | sort | uniq | crontab -" >> out/install.sh
 	echo "cd \$$uname_str" >> out/install.sh
 	echo "find . -path ./etc -prune -false -o -name *.ko | xargs -I % cp --parents % /" >> out/install.sh
+	echo "sync" >> out/install.sh
 	echo "cd - > /dev/null" >> out/install.sh
 	echo "cd /lib/modules/\$$uname_str/" >> out/install.sh
 	echo "depmod" >> out/install.sh
@@ -103,7 +104,7 @@ if [[ ! -f "out/install.sh" ]]; then
 	chmod +x out/install.sh
 else
 	if [[ ! $(grep "$MHI_KERNEL_VER" out/install.sh) ]]; then
-		sed -i '/}/i echo '$MHI_KERNEL_VER'' out/install.sh
+		sed -i '/Supported kernel versions:/a echo '$MHI_KERNEL_VER'' out/install.sh
 	fi
 fi
 
