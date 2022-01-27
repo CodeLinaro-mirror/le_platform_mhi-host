@@ -53,6 +53,7 @@ struct wwan_device {
  * @dev: Underlying device
  * @rxq: Buffer inbound queue
  * @waitqueue: The waitqueue for port fops (read/write/poll)
+ * @flush: Force flush of read
  */
 struct wwan_port {
 	enum wwan_port_type type;
@@ -63,6 +64,7 @@ struct wwan_port {
 	struct device dev;
 	struct sk_buff_head rxq;
 	wait_queue_head_t waitqueue;
+	bool flush;
 };
 
 static ssize_t index_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -316,6 +318,7 @@ void wwan_remove_port(struct wwan_port *port)
 
 	wake_up_interruptible(&port->waitqueue);
 
+	port->flush = false;
 	skb_queue_purge(&port->rxq);
 	dev_set_drvdata(&port->dev, NULL);
 	device_unregister(&port->dev);
@@ -453,13 +456,20 @@ static bool is_write_blocked(struct wwan_port *port)
 
 static int wwan_wait_rx(struct wwan_port *port, bool nonblock)
 {
+	int ret;
+
 	if (!is_read_blocked(port))
 		return 0;
 
 	if (nonblock)
 		return -EAGAIN;
 
-	if (wait_event_interruptible(port->waitqueue, !is_read_blocked(port)))
+	ret = wait_event_interruptible(port->waitqueue, port->flush ||
+				       !is_read_blocked(port));
+	if (ret)
+		return -ERESTARTSYS;
+
+	if (port->flush)
 		return -ERESTARTSYS;
 
 	return 0;
@@ -600,6 +610,20 @@ static long wwan_port_ioctl(struct file *filp, unsigned int cmd,
 	return wwan_port_op_ioctl(port, cmd, arg);
 }
 
+static int wwan_port_fops_flush(struct file *filp, fl_owner_t id)
+{
+	struct wwan_port *port = filp->private_data;
+	pr_err("%s: %d:%s flush\n", wwan_port_type_str[port->type],
+	       (int) task_pid_nr(current), current->comm);
+
+	skb_queue_purge(&port->rxq);
+	port->flush = true;
+
+	wake_up_interruptible(&port->waitqueue);
+
+	return 0;
+}
+
 static const struct file_operations wwan_port_fops = {
 	.owner = THIS_MODULE,
 	.open = wwan_port_fops_open,
@@ -607,6 +631,7 @@ static const struct file_operations wwan_port_fops = {
 	.read = wwan_port_fops_read,
 	.write = wwan_port_fops_write,
 	.poll = wwan_port_fops_poll,
+	.flush = wwan_port_fops_flush,
 	.llseek = noop_llseek,
 	.unlocked_ioctl = wwan_port_ioctl,
 };
