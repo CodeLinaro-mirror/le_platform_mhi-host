@@ -80,6 +80,7 @@ struct uci_dev {
 	struct uci_chan *uchan;
 	size_t mtu;
 	bool enabled;
+	bool flush;
 
 	/* synchronize open, release and driver remove */
 	struct mutex lock;
@@ -411,12 +412,17 @@ static ssize_t mhi_uci_read(struct file *file,
 
 		spin_unlock_bh(&uchan->dl_pending_lock);
 		ret = wait_event_interruptible(uchan->dl_wq,
-					       (!udev->enabled ||
+					       (!udev->enabled || udev->flush ||
 					      !list_empty(&uchan->dl_pending)));
 
 		if (ret == -ERESTARTSYS) {
 			dev_dbg(dev, "Interrupted by a signal in %s, exiting\n",
 				__func__);
+			goto err_mtx_unlock;
+		}
+
+		if (udev->flush) {
+			ret = -ERESTARTSYS;
 			goto err_mtx_unlock;
 		}
 
@@ -484,6 +490,23 @@ err_mtx_unlock:
 	return ret;
 }
 
+static int mhi_uci_flush(struct file *file, fl_owner_t id)
+{
+	struct uci_dev *udev = file->private_data;
+	struct mhi_device *mhi_dev = udev->mhi_dev;
+	struct device *dev = &mhi_dev->dev;
+
+	dev_err(dev, "%s: flush called from %d:%s\n", __func__,
+		(int) task_pid_nr(current), current->comm);
+	mutex_lock(&udev->lock);
+	udev->flush = true;
+	if (udev->uchan)
+		wake_up(&udev->uchan->dl_wq);
+	mutex_unlock(&udev->lock);
+
+	return 0;
+}
+
 static const struct file_operations mhidev_fops = {
 	.owner = THIS_MODULE,
 	.open = mhi_uci_open,
@@ -491,6 +514,7 @@ static const struct file_operations mhidev_fops = {
 	.read = mhi_uci_read,
 	.write = mhi_uci_write,
 	.poll = mhi_uci_poll,
+	.flush = mhi_uci_flush,
 };
 
 static void mhi_ul_xfer_cb(struct mhi_device *mhi_dev,
@@ -591,6 +615,7 @@ static void mhi_uci_remove(struct mhi_device *mhi_dev)
 	/* disable the node */
 	mutex_lock(&udev->lock);
 	udev->enabled = false;
+	udev->flush = false;
 
 	/* delete the node to prevent new opens */
 	device_destroy(uci_dev_class, MKDEV(uci_dev_major, udev->minor));
