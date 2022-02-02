@@ -133,6 +133,8 @@ if [[ ! -f "out/uninstall.sh" ]]; then
 	echo "cd /lib/modules/\$$uname_str" >> out/uninstall.sh
 	echo "depmod" >> out/uninstall.sh
 	echo "cd - > /dev/null" >> out/uninstall.sh
+	echo "update-initramfs -c -k \$$uname_str" >> out/uninstall.sh
+	echo "Updated initramfs. If possible, please reboot to ensure sanity check that drivers are indeed removed."
 	chmod +x out/uninstall.sh
 fi
 

@@ -36,3 +36,7 @@ bash $MHI_BUILD_ROOT/build/build.sh clean
 
 cd /lib/modules/$MHI_KERNEL_VER/
 depmod
+cd - > /dev/null
+
+update-initramfs -c -k $(uname -r)
+echo "RAMFS updated, please reboot for sanity check if desired"
