@@ -1373,7 +1373,7 @@ int mhi_queue_buf(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 EXPORT_SYMBOL_GPL(mhi_queue_buf);
 
 int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
-		  struct mhi_buf *buf[], enum mhi_flags flags[],
+		  struct mhi_buf *bufs, enum mhi_flags flags[],
 		  unsigned int num)
 {
 	struct mhi_ring *buf_ring, *tre_ring;
@@ -1391,27 +1391,27 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 
 	while (num-- > 0) {
 		buf_info = buf_ring->wp;
-		if (buf[i]->dma_addr)
-			buf_info->p_addr = buf[i]->dma_addr;
+		if (bufs[i].dma_addr)
+			buf_info->p_addr = bufs[i].dma_addr;
 		else
-			buf_info->v_addr = buf[i]->buf;
-		buf_info->cb_buf = buf;
+			buf_info->v_addr = bufs[i].buf;
+		buf_info->cb_buf = bufs[i].buf;
 		buf_info->wp = tre_ring->wp;
 		buf_info->dir = mhi_chan->dir;
 
-		if (buf[i]->len > mhi_cntrl->max_tre_len) {
+		if (bufs[i].len > mhi_cntrl->max_tre_len) {
 			ret = -EMSGSIZE;
 			goto error;
 		}
 
-		buf_info->len = buf[i]->len;
+		buf_info->len = bufs[i].len;
 
-		if (!buf[i]->dma_addr) {
+		if (!bufs[i].dma_addr) {
 			ret = mhi_cntrl->map_single(mhi_cntrl, buf_info);
 			if (ret)
 				goto error;
 		} else {
-			if (buf[i]->streaming_dma) {
+			if (bufs[i].streaming_dma) {
 				buf_info->dma_flag |= MHI_DMA_STREAMING_SYNC;
 				dma_sync_single_for_device(mhi_cntrl->cntrl_dev,
 							   buf_info->p_addr,
@@ -1432,7 +1432,7 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 
 		mhi_tre = tre_ring->wp;
 		mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
-		mhi_tre->dword[0] = buf[i]->len;
+		mhi_tre->dword[0] = bufs[i].len;
 		mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
 
 		if (mhi_chan->dir == DMA_TO_DEVICE)
@@ -1452,10 +1452,10 @@ error:
 	for (j = i - 1; j >= 0; j--) {
 		atomic_dec(&mhi_cntrl->pending_pkts);
 		buf_info = cur_buf_ring_wp;
-		if (!buf[i]->dma_addr) {
+		if (!bufs[i].dma_addr) {
 			mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
 		} else {
-			if (buf[i]->streaming_dma)
+			if (bufs[i].streaming_dma)
 				dma_sync_single_for_cpu(mhi_cntrl->cntrl_dev,
 							buf_info->p_addr,
 							buf_info->len,
@@ -1471,7 +1471,7 @@ error:
 }
 
 int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
-		    struct mhi_buf *buf[], enum mhi_flags mflags[],
+		    struct mhi_buf *bufs, enum mhi_flags mflags[],
 		    unsigned int num)
 {
 	unsigned long flags;
@@ -1490,7 +1490,7 @@ int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 		goto error;
 	}
 
-	ret = mhi_gen_n_tre(mhi_dev->mhi_cntrl, mhi_chan, buf, mflags,
+	ret = mhi_gen_n_tre(mhi_dev->mhi_cntrl, mhi_chan, bufs, mflags,
 			    num);
 	if (ret)
 		goto error;

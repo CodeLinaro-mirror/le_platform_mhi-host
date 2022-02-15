@@ -841,7 +841,7 @@ int mhi_queue_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
  * @num: Number of transfers
  */
 int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
-		  struct mhi_buf *buf[], enum mhi_flags mflags[],
+		  struct mhi_buf *bufs, enum mhi_flags mflags[],
 		  unsigned int num);
 
 /**
