@@ -17,6 +17,7 @@
 #define MHI_NET_MIN_MTU		ETH_MIN_MTU
 #define MHI_NET_MAX_MTU		0xffff
 #define MHI_NET_DEFAULT_MTU	0x4000
+#define MHI_NET_DEFAULT_MRU	32768
 
 struct mhi_device_info {
 	const char *netname;
@@ -319,6 +320,7 @@ static int mhi_net_probe(struct mhi_device *mhi_dev,
 	mhi_netdev->mdev = mhi_dev;
 	mhi_netdev->skbagg_head = NULL;
 	mhi_netdev->proto = info->proto;
+	mhi_netdev->mru = MHI_NET_DEFAULT_MRU;
 	SET_NETDEV_DEV(ndev, &mhi_dev->dev);
 	SET_NETDEV_DEVTYPE(ndev, &wwan_type);
 
