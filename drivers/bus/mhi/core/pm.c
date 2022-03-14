@@ -1246,6 +1246,7 @@ EXPORT_SYMBOL_GPL(mhi_power_down);
 int mhi_sync_power_up(struct mhi_controller *mhi_cntrl)
 {
 	int ret = mhi_async_power_up(mhi_cntrl);
+	struct device *dev = &mhi_cntrl->mhi_dev->dev;
 
 	if (ret)
 		return ret;
@@ -1256,8 +1257,10 @@ int mhi_sync_power_up(struct mhi_controller *mhi_cntrl)
 			   msecs_to_jiffies(mhi_cntrl->timeout_ms));
 
 	ret = (MHI_VALID_POWER_UP(mhi_cntrl->ee)) ? 0 : -ETIMEDOUT;
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Power up timed out after %u milliseconds\n", mhi_cntrl->timeout_ms);
 		mhi_power_down(mhi_cntrl, false);
+	}
 
 	return ret;
 }
