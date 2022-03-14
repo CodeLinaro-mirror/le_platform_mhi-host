@@ -164,6 +164,17 @@ static void mhi_toggle_dev_wake(struct mhi_controller *mhi_cntrl)
 	mhi_cntrl->wake_put(mhi_cntrl, true);
 }
 
+static void mhi_write_session_id(struct mhi_controller *mhi_cntrl)
+{
+	u32 session_id;
+	struct device *dev = &mhi_cntrl->mhi_dev->dev;
+	void __iomem *base = mhi_cntrl->bhi;
+
+	session_id = MHI_RANDOM_U32_NONZERO(BHI_TXDB_SEQNUM_BMSK);
+	dev_dbg(dev, "Session ID: 0x%x\n", session_id);
+	mhi_write_reg(mhi_cntrl, base, BHI_IMGTXDB, session_id);
+}
+
 /* Handle device ready state transition */
 int mhi_ready_state_transition(struct mhi_controller *mhi_cntrl)
 {
@@ -242,6 +253,7 @@ int mhi_ready_state_transition(struct mhi_controller *mhi_cntrl)
 		spin_unlock_irq(&mhi_event->lock);
 	}
 
+	mhi_write_session_id(mhi_cntrl);
 	/* Set MHI to M0 state */
 	mhi_set_mhi_state(mhi_cntrl, MHI_STATE_M0);
 	read_unlock_bh(&mhi_cntrl->pm_lock);
@@ -994,6 +1006,7 @@ int mhi_pm_resume(struct mhi_controller *mhi_cntrl)
 		return -EIO;
 	}
 
+	mhi_write_session_id(mhi_cntrl);
 	/* Set MHI to M0 and wait for completion */
 	mhi_set_mhi_state(mhi_cntrl, MHI_STATE_M0);
 	write_unlock_irq(&mhi_cntrl->pm_lock);
