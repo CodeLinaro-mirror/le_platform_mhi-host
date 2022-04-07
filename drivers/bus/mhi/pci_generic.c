@@ -1049,6 +1049,7 @@ static int __maybe_unused mhi_pci_freeze(struct device *dev)
 	struct mhi_pci_device *mhi_pdev = dev_get_drvdata(dev);
 	struct mhi_controller *mhi_cntrl = &mhi_pdev->mhi_cntrl;
 
+	flush_work(&mhi_pdev->recovery_work);
 	/* We want to stop all operations, hibernation does not guarantee that
 	 * device will be in the same state as before freezing, especially if
 	 * the intermediate restore kernel reinitializes MHI device with new
@@ -1086,6 +1087,7 @@ static const struct dev_pm_ops mhi_pci_pm_ops = {
 	.resume = mhi_pci_resume,
 	.freeze = mhi_pci_freeze,
 	.thaw = mhi_pci_restore,
+	.poweroff = mhi_pci_freeze,
 	.restore = mhi_pci_restore,
 #endif
 };
