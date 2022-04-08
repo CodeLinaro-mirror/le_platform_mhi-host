@@ -8,7 +8,7 @@ if ! insmod drivers/bus/mhi/core/mhi.ko; then
 	exit 1
 else
 	if [[ ! -f "/etc/udev/rules.d/99-mhi-permissions.rules" ]]; then
-		cp build/99-mhi-permissions.rules /etc/udev/rules.d/
+		cp build/*.rules /etc/udev/rules.d/
 		udevadm control --reload
 	fi
 fi

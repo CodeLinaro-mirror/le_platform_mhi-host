@@ -27,6 +27,13 @@ then
 	exit 1
 fi
 
+if [[ ! -d "/lib/modules/$(uname -r)/build" ]]
+then
+	echo "Headers for currently running kernel version $(uname -r) not found."
+	if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root to install headers" ; exit 1 ; fi
+	sudo apt-get -y install linux-headers-$(uname -r)
+fi
+
 cd $MHI_BUILD_ROOT
 
 if [[ $1 == "mhi" ]]

@@ -26,7 +26,7 @@ bash $MHI_BUILD_ROOT/scripts/unload.sh
 cd $MHI_BUILD_ROOT
 find . -path ./out -prune -false -o -name *.ko | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % sed -i '/\<%\>/d' /etc/modules
 find . -path ./out -prune -false -o -name *.ko | sed -r 's/^.{2}//' | xargs -I % rm /lib/modules/$MHI_KERNEL_VER/kernel/%
-rm /etc/udev/rules.d/99-mhi-permissions.rules
+find ./build/ -name *.rules -type f -printf "%f\n" | xargs -I % rm /etc/udev/rules.d/%
 udevadm control --reload
 rm /etc/mhi_dynamicdebug.sh
 (crontab -l; echo "@reboot /etc/mhi_dynamicdebug.sh") 2>/dev/null | grep -v /etc/mhi_dynamicdebug.sh | sort | uniq | crontab -
