@@ -68,7 +68,7 @@ mkdir -p $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/lib/modules/$MHI_KERNEL_VER/kernel
 cd $MHI_BUILD_ROOT
 find . -path ./out -prune -false -o -name *.ko | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % sh -c 'grep -qxF % $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/etc/modules || echo % >> $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/etc/modules'
 find . -path ./out -prune -false -o -name *.ko | xargs -I % cp --parents % $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/lib/modules/$MHI_KERNEL_VER/kernel
-cp build/99-mhi-permissions.rules $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/etc/udev/rules.d/
+cp build/*.rules $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/etc/udev/rules.d/
 cp scripts/debug.sh $MHI_BUILD_ROOT/out/$MHI_KERNEL_VER/etc/mhi_dynamicdebug.sh
 
 if [[ ! -f "out/install.sh" ]]; then
@@ -86,7 +86,7 @@ if [[ ! -f "out/install.sh" ]]; then
 	echo "echo \$(cat \$$uname_str/etc/modules | tr '\n' ' ')" >> out/install.sh
 	echo "cat \$$uname_str/etc/modules | xargs -I % sh -c 'grep -qxF % /etc/modules || echo % >> /etc/modules'" >> out/install.sh
 	echo "mkdir -p /lib/firmware/qcom/sdx65m" >> out/install.sh
-	echo "cp \$$uname_str/etc/udev/rules.d/99-mhi-permissions.rules /etc/udev/rules.d/" >> out/install.sh
+	echo "cp \$$uname_str/etc/udev/rules.d/*.rules /etc/udev/rules.d/" >> out/install.sh
 	echo "udevadm control --reload" >> out/install.sh
 	echo "cp \$$uname_str/etc/mhi_dynamicdebug.sh /etc/mhi_dynamicdebug.sh" >> out/install.sh
 	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh\") 2>/dev/null | sort | uniq | crontab -" >> out/install.sh
@@ -126,7 +126,7 @@ if [[ ! -f "out/uninstall.sh" ]]; then
 	find ./drivers/bus/mhi -name *.ko | tac | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % echo "modprobe -qr %" >> out/uninstall.sh
 	find . -path ./out -prune -false -o -name *.ko | sed 's:.*/::' | grep -Po '.*(?=\.)' | xargs -I % echo "sed -i '/\<%\>/d' /etc/modules" >> out/uninstall.sh
 	find . -path ./out -prune -false -o -name *.ko | sed -r 's/^.{2}//' | xargs -I % echo "rm /lib/modules/\$$uname_str/kernel/%" >> out/uninstall.sh
-	echo "rm /etc/udev/rules.d/99-mhi-permissions.rules" >> out/uninstall.sh
+	find ./build/ -name *.rules -type f -printf "%f\n" | xargs -I % echo "rm /etc/udev/rules.d/%" >> out/uninstall.sh
 	echo "udevadm control --reload" >> out/uninstall.sh
 	echo "rm /etc/mhi_dynamicdebug.sh" >> out/uninstall.sh
 	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh\") 2>/dev/null | grep -v /etc/mhi_dynamicdebug.sh | sort | uniq | crontab -" >> out/uninstall.sh
