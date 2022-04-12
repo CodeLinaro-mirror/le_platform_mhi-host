@@ -969,7 +969,9 @@ static int  __maybe_unused mhi_pci_runtime_suspend(struct device *dev)
 
 pci_suspend:
 	pci_disable_device(pdev);
-	pci_wake_from_d3(pdev, true);
+	err = pci_wake_from_d3(pdev, true);
+	if (err)
+		dev_dbg(&pdev->dev, "failed to set D3 wake-capable: %d\n", err);
 
 	/* start crash check timer for D3hot to D0 transitions */
 	mod_timer(&mhi_pdev->health_check_timer, jiffies + CRASH_CHECK_PERIOD);
