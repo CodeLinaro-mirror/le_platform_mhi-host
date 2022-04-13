@@ -463,11 +463,13 @@ void mhi_create_devices(struct mhi_controller *mhi_cntrl)
 		case DMA_TO_DEVICE:
 			mhi_dev->ul_chan = mhi_chan;
 			mhi_dev->ul_chan_id = mhi_chan->chan;
+			mhi_dev->ul_event_id = mhi_chan->er_index;
 			break;
 		case DMA_FROM_DEVICE:
 			/* We use dl_chan as offload channels */
 			mhi_dev->dl_chan = mhi_chan;
 			mhi_dev->dl_chan_id = mhi_chan->chan;
+			mhi_dev->dl_event_id = mhi_chan->er_index;
 			break;
 		default:
 			dev_err(dev, "Direction not supported\n");
@@ -486,9 +488,11 @@ void mhi_create_devices(struct mhi_controller *mhi_cntrl)
 				if (mhi_chan->dir == DMA_TO_DEVICE) {
 					mhi_dev->ul_chan = mhi_chan;
 					mhi_dev->ul_chan_id = mhi_chan->chan;
+					mhi_dev->ul_event_id = mhi_chan->er_index;
 				} else {
 					mhi_dev->dl_chan = mhi_chan;
 					mhi_dev->dl_chan_id = mhi_chan->chan;
+					mhi_dev->dl_event_id = mhi_chan->er_index;
 				}
 				get_device(&mhi_dev->dev);
 				mhi_chan->mhi_dev = mhi_dev;

@@ -508,6 +508,8 @@ struct mhi_controller {
  * @dev_type: MHI device type
  * @ul_chan_id: MHI channel id for UL transfer
  * @dl_chan_id: MHI channel id for DL transfer
+ * @ul_event_id: MHI event ring id for UL transfer
+ * @dl_event_id: MHI event ring id for DL transfer
  * @dev_wake: Device wakeup counter
  * @tiocm: Device current terminal settings
  */
@@ -521,6 +523,8 @@ struct mhi_device {
 	enum mhi_device_type dev_type;
 	int ul_chan_id;
 	int dl_chan_id;
+	int ul_event_id;
+	int dl_event_id;
 	u32 dev_wake;
 	u32 tiocm;
 };
