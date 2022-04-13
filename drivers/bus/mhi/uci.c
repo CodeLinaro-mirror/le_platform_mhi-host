@@ -613,6 +613,9 @@ static const struct mhi_device_id mhi_uci_match_table[] = {
 	{ .chan = "LOOPBACK", .driver_data = 0x1000},
 	{ .chan = "SAHARA", .driver_data = 0x8000},
 	{ .chan = "QDSS", .driver_data = 0x8000},
+	{ .chan = "NMEA", .driver_data = 0x1000},
+	{ .chan = "CSM_CTRL", .driver_data = 0x1000},
+	{ .chan = "BL", .driver_data = 0x1000},
 	{ .chan = "IP_HW_ADPL", .driver_data = 0x8000},
 	{},
 };
