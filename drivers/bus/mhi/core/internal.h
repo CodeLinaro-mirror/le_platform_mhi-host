@@ -320,7 +320,6 @@ enum mhi_cmd_type {
 
 /* Transfer descriptor macros */
 #define MHI_TRE_DATA_PTR(ptr) (ptr)
-#define MHI_TRE_DATA_DWORD0(len, tre_len) (len & tre_len)
 #define MHI_TRE_DATA_DWORD1(bei, ieot, ieob, chain) ((2 << 16) | (bei << 10) \
 	| (ieot << 9) | (ieob << 8) | chain)
 

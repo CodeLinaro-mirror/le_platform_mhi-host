@@ -1234,6 +1234,10 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	buf_info->cb_buf = info->cb_buf;
 	buf_info->wp = tre_ring->wp;
 	buf_info->dir = mhi_chan->dir;
+
+	if (info->len > mhi_cntrl->max_tre_len)
+		return -EMSGSIZE;
+
 	buf_info->len = info->len;
 
 	if (!info->pre_mapped) {
@@ -1251,8 +1255,7 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 
 	mhi_tre = tre_ring->wp;
 	mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
-	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(info->len,
-						mhi_cntrl->max_tre_len);
+	mhi_tre->dword[0] = info->len;
 	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
 
 	dev_dbg(dev, "WP: 0x%llx TRE: 0x%llx 0x%08x 0x%08x\n",
