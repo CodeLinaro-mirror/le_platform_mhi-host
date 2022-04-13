@@ -79,12 +79,14 @@ enum mhi_callback {
  * @MHI_EOT: End of transfer
  * @MHI_CHAIN: Linked transfer
  * @MHI_BEI: Block event interrupt
+ * @MHI_NO_DB: Skip ringing doorbell
  */
 enum mhi_flags {
 	MHI_EOB = BIT(0),
 	MHI_EOT = BIT(1),
 	MHI_CHAIN = BIT(2),
 	MHI_BEI = BIT(3),
+	MHI_NO_DB = BIT(4),
 };
 
 /**
