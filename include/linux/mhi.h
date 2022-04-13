@@ -78,11 +78,13 @@ enum mhi_callback {
  * @MHI_EOB: End of buffer for bulk transfer
  * @MHI_EOT: End of transfer
  * @MHI_CHAIN: Linked transfer
+ * @MHI_BEI: Block event interrupt
  */
 enum mhi_flags {
 	MHI_EOB = BIT(0),
 	MHI_EOT = BIT(1),
 	MHI_CHAIN = BIT(2),
+	MHI_BEI = BIT(3),
 };
 
 /**
