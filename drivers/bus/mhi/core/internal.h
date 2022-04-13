@@ -536,6 +536,7 @@ struct mhi_cmd {
 enum mhi_dma_flag {
        MHI_DMA_COHERENT = 0x1, /* pre-mapped coherent dma */
        MHI_DMA_STREAMING = 0x2, /* map_single/unmap_single done by core */
+       MHI_DMA_STREAMING_SYNC = 0x4, /* sync_for_device/cpu done by core */
 };
 
 struct mhi_buf_info {

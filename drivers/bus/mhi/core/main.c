@@ -679,6 +679,12 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 			else
 				xfer_len = buf_info->len;
 
+			if (buf_info->dma_flag & MHI_DMA_STREAMING_SYNC)
+				dma_sync_single_for_cpu(mhi_cntrl->cntrl_dev,
+							buf_info->p_addr,
+							buf_info->len,
+							buf_info->dir);
+
 			/* Unmap if it's not pre-mapped by client */
 			if (likely(buf_info->dma_flag & MHI_DMA_STREAMING))
 				mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
@@ -1358,6 +1364,14 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 			ret = mhi_cntrl->map_single(mhi_cntrl, buf_info);
 			if (ret)
 				goto error;
+		} else {
+			if (buf[i]->streaming_dma) {
+				buf_info->dma_flag |= MHI_DMA_STREAMING_SYNC;
+				dma_sync_single_for_device(mhi_cntrl->cntrl_dev,
+							   buf_info->p_addr,
+							   buf_info->len,
+							   buf_info->dir);
+			}
 		}
 
 		eob = !!(flags[i] & MHI_EOB);
@@ -1390,8 +1404,15 @@ error:
 	for (j = i - 1; j >= 0; j--) {
 		atomic_dec(&mhi_cntrl->pending_pkts);
 		buf_info = cur_buf_ring_wp;
-		if (!buf[i]->dma_addr)
+		if (!buf[i]->dma_addr) {
 			mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
+		} else {
+			if (buf[i]->streaming_dma)
+				dma_sync_single_for_cpu(mhi_cntrl->cntrl_dev,
+							buf_info->p_addr,
+							buf_info->len,
+							buf_info->dir);
+		}
 
 		cur_buf_ring_wp += buf_ring->el_size;
 		if (cur_buf_ring_wp >= buf_ring->base + buf_ring->len)
@@ -1780,6 +1801,12 @@ static void mhi_reset_data_chan(struct mhi_controller *mhi_cntrl,
 			/* Release the reference got from mhi_queue() */
 			mhi_cntrl->runtime_put(mhi_cntrl);
 		}
+
+		if (buf_info->dma_flag & MHI_DMA_STREAMING_SYNC)
+			dma_sync_single_for_cpu(mhi_cntrl->cntrl_dev,
+						buf_info->p_addr,
+						buf_info->len,
+						buf_info->dir);
 
 		if (buf_info->dma_flag & MHI_DMA_STREAMING)
 			mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
