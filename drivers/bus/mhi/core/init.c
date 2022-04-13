@@ -498,7 +498,7 @@ error_alloc_chan_ctxt:
 
 int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 {
-	u32 val;
+	u32 val, mtl_offset;
 	int i, ret;
 	struct mhi_chan *mhi_chan;
 	struct mhi_event *mhi_event;
@@ -624,6 +624,17 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 	if (ret) {
 		dev_err(dev, "Unable to read MHICFG register\n");
 		return ret;
+	}
+
+	ret = mhi_get_capability_offset(mhi_cntrl, MAX_TRE_LEN_CAP_ID,
+					&mtl_offset);
+	if (!ret) {
+		ret = mhi_read_reg(mhi_cntrl, base, mtl_offset, &val);
+		if (!ret) {
+			mhi_cntrl->max_tre_len = val;
+			dev_dbg(dev, "Max tre length supported by device %zu\n",
+				mhi_cntrl->max_tre_len);
+		}
 	}
 
 	return 0;

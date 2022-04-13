@@ -49,6 +49,8 @@ extern struct bus_type mhi_bus_type;
 #define CAP_NEXT_CAP_MASK (0x00FFF000)
 #define CAP_NEXT_CAP_SHIFT (12)
 
+#define MAX_TRE_LEN_CAP_ID (3)
+
 #define BHIOFF (0x28)
 #define BHIOFF_BHIOFF_MASK (0xFFFFFFFF)
 #define BHIOFF_BHIOFF_SHIFT (0)
