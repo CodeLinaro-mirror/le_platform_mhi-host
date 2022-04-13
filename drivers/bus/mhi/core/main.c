@@ -653,7 +653,8 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 		struct mhi_tre *local_rp, *ev_tre;
 		void *dev_rp;
 		struct mhi_buf_info *buf_info;
-		u32 xfer_len;
+		u32 xfer_len, total_tre_len = 0;
+		bool send_cb = false;
 
 		if (!is_valid_ring_ptr(tre_ring, ptr)) {
 			dev_err(&mhi_cntrl->mhi_dev->dev,
@@ -673,11 +674,15 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 		while (local_rp != dev_rp) {
 			buf_info = buf_ring->rp;
 			/* If it's the last TRE, get length from the event */
-			if (local_rp == ev_tre)
+			if (local_rp == ev_tre) {
 				xfer_len = MHI_TRE_GET_EV_LEN(event,
 							mhi_cntrl->max_tre_len);
-			else
+				send_cb = true;
+			} else {
 				xfer_len = buf_info->len;
+			}
+
+			total_tre_len += xfer_len;
 
 			if (buf_info->dma_flag & MHI_DMA_STREAMING_SYNC)
 				dma_sync_single_for_cpu(mhi_cntrl->cntrl_dev,
@@ -699,7 +704,15 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 			local_rp = tre_ring->rp;
 
 			/* notify client */
-			mhi_chan->xfer_cb(mhi_chan->mhi_dev, &result);
+			if (buf_info->sg_enabled) {
+				if (send_cb) {
+					result.bytes_xferd = total_tre_len;
+					mhi_chan->xfer_cb(mhi_chan->mhi_dev,
+							  &result);
+				}
+			} else {
+				mhi_chan->xfer_cb(mhi_chan->mhi_dev, &result);
+			}
 
 			if (mhi_chan->dir == DMA_TO_DEVICE) {
 				atomic_dec(&mhi_cntrl->pending_pkts);
@@ -1377,6 +1390,8 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 		eob = !!(flags[i] & MHI_EOB);
 		eot = !!(flags[i] & MHI_EOT);
 		chain = !!(flags[i] & MHI_CHAIN);
+
+		buf_info->sg_enabled = !!(flags[i] & MHI_SG);
 
 		/* honor bei flag if interrupt moderation is disabled */
 		bei = !!(mhi_chan->intmod ?

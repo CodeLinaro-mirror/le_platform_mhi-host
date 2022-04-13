@@ -80,6 +80,7 @@ enum mhi_callback {
  * @MHI_CHAIN: Linked transfer
  * @MHI_BEI: Block event interrupt
  * @MHI_NO_DB: Skip ringing doorbell
+ * @MHI_SG: scatter-gather enabled, single xfer call back to client
  */
 enum mhi_flags {
 	MHI_EOB = BIT(0),
@@ -87,6 +88,7 @@ enum mhi_flags {
 	MHI_CHAIN = BIT(2),
 	MHI_BEI = BIT(3),
 	MHI_NO_DB = BIT(4),
+	MHI_SG = BIT(5),
 };
 
 /**

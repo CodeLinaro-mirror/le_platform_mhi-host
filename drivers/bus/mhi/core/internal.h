@@ -549,6 +549,7 @@ struct mhi_buf_info {
 	enum dma_data_direction dir;
 	enum mhi_dma_flag dma_flag;
 	bool used; /* Indicates whether the buffer is used or not */
+	bool sg_enabled; /* perform sg and return single completion call back */
 };
 
 struct mhi_event {
