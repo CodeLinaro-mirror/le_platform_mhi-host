@@ -1320,6 +1320,134 @@ int mhi_queue_buf(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 }
 EXPORT_SYMBOL_GPL(mhi_queue_buf);
 
+int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
+		  struct mhi_buf *buf[], enum mhi_flags flags[],
+		  unsigned int num)
+{
+	struct mhi_ring *buf_ring, *tre_ring;
+	struct mhi_tre *mhi_tre;
+	struct mhi_buf_info *buf_info;
+	void *cur_buf_ring_wp, *cur_tre_ring_wp;
+	int eot, eob, chain, bei;
+	int i = 0, j, ret;
+
+	buf_ring = &mhi_chan->buf_ring;
+	tre_ring = &mhi_chan->tre_ring;
+
+	cur_buf_ring_wp = buf_ring->wp;
+	cur_tre_ring_wp = tre_ring->wp;
+
+	while (num-- > 0) {
+		buf_info = buf_ring->wp;
+		if (buf[i]->dma_addr)
+			buf_info->p_addr = buf[i]->dma_addr;
+		else
+			buf_info->v_addr = buf[i]->buf;
+		buf_info->cb_buf = buf;
+		buf_info->wp = tre_ring->wp;
+		buf_info->dir = mhi_chan->dir;
+
+		if (buf[i]->len > mhi_cntrl->max_tre_len) {
+			ret = -EMSGSIZE;
+			goto error;
+		}
+
+		buf_info->len = buf[i]->len;
+
+		if (!buf[i]->dma_addr) {
+			ret = mhi_cntrl->map_single(mhi_cntrl, buf_info);
+			if (ret)
+				goto error;
+		}
+
+		eob = !!(flags[i] & MHI_EOB);
+		eot = !!(flags[i] & MHI_EOT);
+		chain = !!(flags[i] & MHI_CHAIN);
+
+		/* honor bei flag if interrupt moderation is disabled */
+		bei = !!(mhi_chan->intmod ?
+					mhi_chan->intmod : flags[i] & MHI_BEI);
+
+		mhi_tre = tre_ring->wp;
+		mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
+		mhi_tre->dword[0] = buf[i]->len;
+		mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
+
+		if (mhi_chan->dir == DMA_TO_DEVICE)
+			atomic_inc(&mhi_cntrl->pending_pkts);
+
+		/* increment WP */
+		mhi_add_ring_element(mhi_cntrl, tre_ring);
+		mhi_add_ring_element(mhi_cntrl, buf_ring);
+		i++;
+	}
+	return 0;
+
+error:
+	buf_ring->wp = cur_buf_ring_wp;
+	tre_ring->wp = cur_buf_ring_wp;
+
+	for (j = i - 1; j >= 0; j--) {
+		atomic_dec(&mhi_cntrl->pending_pkts);
+		buf_info = cur_buf_ring_wp;
+		if (!buf[i]->dma_addr)
+			mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
+
+		cur_buf_ring_wp += buf_ring->el_size;
+		if (cur_buf_ring_wp >= buf_ring->base + buf_ring->len)
+			cur_buf_ring_wp = buf_ring->base;
+	}
+
+	return ret;
+}
+
+int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
+		    struct mhi_buf *buf[], enum mhi_flags mflags[],
+		    unsigned int num)
+{
+	unsigned long flags;
+	int ret;
+	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
+	struct mhi_chan *mhi_chan = (dir == DMA_TO_DEVICE) ? mhi_dev->ul_chan :
+							     mhi_dev->dl_chan;
+
+	if (unlikely(MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state)))
+		return -EIO;
+
+	read_lock_irqsave(&mhi_chan->lock, flags);
+
+	if (get_nr_avail_ring_elements(mhi_cntrl, &mhi_chan->tre_ring) < num) {
+		ret = -EAGAIN;
+		goto error;
+	}
+
+	ret = mhi_gen_n_tre(mhi_dev->mhi_cntrl, mhi_chan, buf, mflags,
+			    num);
+	if (ret)
+		goto error;
+
+	/* Packet is queued, take a usage ref to exit M3 if necessary
+	 * for host->device buffer, balanced put is done on buffer completion
+	 * for device->host buffer, balanced put is after ringing the DB
+	 */
+	mhi_cntrl->runtime_get(mhi_cntrl);
+
+	/* Assert dev_wake (to exit/prevent M1/M2)*/
+	mhi_cntrl->wake_toggle(mhi_cntrl);
+
+	if (likely(MHI_DB_ACCESS_VALID(mhi_cntrl)))
+		mhi_ring_chan_db(mhi_cntrl, mhi_chan);
+
+	if (dir == DMA_FROM_DEVICE)
+		mhi_cntrl->runtime_put(mhi_cntrl);
+
+error:
+	read_unlock_irqrestore(&mhi_chan->lock, flags);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mhi_queue_n_dma);
+
 bool mhi_queue_is_full(struct mhi_device *mhi_dev, enum dma_data_direction dir)
 {
 	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;

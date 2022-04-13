@@ -810,6 +810,19 @@ int mhi_queue_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 		  struct mhi_buf *mhi_buf, size_t len, enum mhi_flags mflags);
 
 /**
+ * mhi_queue_n_dma - Send or receive n DMA mapped buffers from client device
+ *                 over MHI channel
+ * @mhi_dev: Device associated with the channels
+ * @dir: DMA direction for the channel
+ * @mhi_buf[]: Array of mhi_buf for holding the DMA mapped data and len
+ * @mflags[]: Array of MHI transfer flags used for the transfer
+ * @num: Number of transfers
+ */
+int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
+		  struct mhi_buf *buf[], enum mhi_flags mflags[],
+		  unsigned int num);
+
+/**
  * mhi_queue_buf - Send or receive raw buffers from client device over MHI
  *                 channel
  * @mhi_dev: Device associated with the channels
