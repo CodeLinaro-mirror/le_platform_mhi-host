@@ -934,7 +934,7 @@ static int parse_config(struct mhi_controller *mhi_cntrl,
 	mhi_cntrl->bounce_buf = config->use_bounce_buf;
 	mhi_cntrl->buffer_len = config->buf_len;
 	if (!mhi_cntrl->buffer_len)
-		mhi_cntrl->buffer_len = MHI_MAX_MTU;
+		mhi_cntrl->buffer_len = mhi_cntrl->max_tre_len;
 
 	/* By default, host is allowed to ring DB in both M0 and M2 states */
 	mhi_cntrl->db_access = MHI_PM_M0 | MHI_PM_M2;
@@ -965,6 +965,8 @@ int mhi_register_controller(struct mhi_controller *mhi_cntrl,
 	    !mhi_cntrl->write_reg || !mhi_cntrl->nr_irqs ||
 	    !mhi_cntrl->irq || !mhi_cntrl->reg_len)
 		return -EINVAL;
+
+	mhi_cntrl->max_tre_len = MHI_MAX_MTU;
 
 	ret = parse_config(mhi_cntrl, config);
 	if (ret)

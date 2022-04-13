@@ -385,6 +385,7 @@ struct mhi_controller_config {
  * @buffer_len: Bounce buffer length
  * @index: Index of the MHI controller instance
  * @bounce_buf: Use of bounce buffer
+ * @max_tre_len: Max supported length of a tranfer or event TRE
  * @fbc_download: MHI host needs to do complete image transfer (optional)
  * @edl_download: MHI host can proceed with BHI download in EDL mode (optional)
  * @wake_set: Device wakeup set flag
@@ -478,6 +479,7 @@ struct mhi_controller {
 	void (*reset)(struct mhi_controller *mhi_cntrl);
 
 	size_t buffer_len;
+	size_t max_tre_len;
 	int index;
 	bool bounce_buf;
 	bool fbc_download;

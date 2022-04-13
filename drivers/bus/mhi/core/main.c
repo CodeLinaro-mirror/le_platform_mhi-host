@@ -634,7 +634,8 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 			buf_info = buf_ring->rp;
 			/* If it's the last TRE, get length from the event */
 			if (local_rp == ev_tre)
-				xfer_len = MHI_TRE_GET_EV_LEN(event);
+				xfer_len = MHI_TRE_GET_EV_LEN(event,
+							mhi_cntrl->max_tre_len);
 			else
 				xfer_len = buf_info->len;
 
@@ -724,7 +725,7 @@ static int parse_rsc_event(struct mhi_controller *mhi_cntrl,
 
 	ev_code = MHI_TRE_GET_EV_CODE(event);
 	cookie = MHI_TRE_GET_EV_COOKIE(event);
-	xfer_len = MHI_TRE_GET_EV_LEN(event);
+	xfer_len = MHI_TRE_GET_EV_LEN(event, mhi_cntrl->max_tre_len);
 
 	/* Received out of bound cookie */
 	WARN_ON(cookie >= buf_ring->len);
@@ -1250,7 +1251,8 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 
 	mhi_tre = tre_ring->wp;
 	mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
-	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(info->len);
+	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(info->len,
+						mhi_cntrl->max_tre_len);
 	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
 
 	dev_dbg(dev, "WP: 0x%llx TRE: 0x%llx 0x%08x 0x%08x\n",
