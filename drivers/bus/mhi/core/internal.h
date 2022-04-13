@@ -11,6 +11,8 @@
 
 extern struct bus_type mhi_bus_type;
 
+#define MHI_REG_SIZE (SZ_4K)
+
 #define MHIREGLEN (0x0)
 #define MHIREGLEN_MHIREGLEN_MASK (0xFFFFFFFF)
 #define MHIREGLEN_MHIREGLEN_SHIFT (0)
@@ -36,6 +38,16 @@ extern struct bus_type mhi_bus_type;
 #define ERDBOFF (0x20)
 #define ERDBOFF_ERDBOFF_MASK (0xFFFFFFFF)
 #define ERDBOFF_ERDBOFF_SHIFT (0)
+
+/* MHI misc capability registers */
+#define MISC_OFFSET (0x24)
+#define MISC_CAP_MASK (0xFFFFFFFF)
+#define MISC_CAP_SHIFT (0)
+
+#define CAP_CAPID_MASK (0xFF000000)
+#define CAP_CAPID_SHIFT (24)
+#define CAP_NEXT_CAP_MASK (0x00FFF000)
+#define CAP_NEXT_CAP_SHIFT (12)
 
 #define BHIOFF (0x28)
 #define BHIOFF_BHIOFF_MASK (0xFFFFFFFF)
@@ -657,6 +669,8 @@ void mhi_write_db(struct mhi_controller *mhi_cntrl, void __iomem *db_addr,
 void mhi_ring_cmd_db(struct mhi_controller *mhi_cntrl, struct mhi_cmd *mhi_cmd);
 void mhi_ring_chan_db(struct mhi_controller *mhi_cntrl,
 		      struct mhi_chan *mhi_chan);
+int mhi_get_capability_offset
+	(struct mhi_controller *mhi_cntrl, u32 capability, u32 *offset);
 
 /* Initialization methods */
 int mhi_init_mmio(struct mhi_controller *mhi_cntrl);

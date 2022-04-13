@@ -60,6 +60,42 @@ int __must_check mhi_poll_reg_field(struct mhi_controller *mhi_cntrl,
 	return -ETIMEDOUT;
 }
 
+int mhi_get_capability_offset(struct mhi_controller *mhi_cntrl, u32 capability,
+			      u32 *offset)
+{
+	u32 cur_cap, next_offset;
+	int ret;
+
+	/* get the 1st supported capability offset */
+	ret = mhi_read_reg_field(mhi_cntrl, mhi_cntrl->regs, MISC_OFFSET,
+				 MISC_CAP_MASK, MISC_CAP_SHIFT, offset);
+	if (ret)
+		return ret;
+	do {
+		if (*offset >= MHI_REG_SIZE)
+			return -ENXIO;
+
+		ret = mhi_read_reg_field(mhi_cntrl, mhi_cntrl->regs, *offset,
+					 CAP_CAPID_MASK, CAP_CAPID_SHIFT,
+					 &cur_cap);
+		if (ret)
+			return ret;
+
+		if (cur_cap == capability)
+			return 0;
+
+		ret = mhi_read_reg_field(mhi_cntrl, mhi_cntrl->regs, *offset,
+					 CAP_NEXT_CAP_MASK, CAP_NEXT_CAP_SHIFT,
+					 &next_offset);
+		if (ret)
+			return ret;
+
+		*offset = next_offset;
+	} while (next_offset);
+
+	return -ENXIO;
+}
+
 void mhi_write_reg(struct mhi_controller *mhi_cntrl, void __iomem *base,
 		   u32 offset, u32 val)
 {
