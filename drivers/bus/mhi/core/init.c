@@ -916,6 +916,7 @@ static int parse_config(struct mhi_controller *mhi_cntrl,
 			const struct mhi_controller_config *config)
 {
 	int ret;
+	struct device *dev = mhi_cntrl->cntrl_dev;
 
 	/* Parse MHI channel configuration */
 	ret = parse_ch_cfg(mhi_cntrl, config);
@@ -932,7 +933,12 @@ static int parse_config(struct mhi_controller *mhi_cntrl,
 		mhi_cntrl->timeout_ms = MHI_TIMEOUT_MS;
 
 	mhi_cntrl->bounce_buf = config->use_bounce_buf;
-	mhi_cntrl->buffer_len = config->buf_len;
+
+	if (config->buf_len > mhi_cntrl->max_tre_len)
+		dev_warn(dev, "buf_len to configure exceeds max tre len\n");
+	else
+		mhi_cntrl->buffer_len = config->buf_len;
+
 	if (!mhi_cntrl->buffer_len)
 		mhi_cntrl->buffer_len = mhi_cntrl->max_tre_len;
 
