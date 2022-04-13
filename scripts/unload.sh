@@ -35,12 +35,6 @@ echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "module dtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
-debug_qrtr() {
-echo -n "module qrtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "module qrtr_main $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "module qrtr_ns $1p" > /sys/kernel/debug/dynamic_debug/control
-}
-
 unload_pci() {
 rmmod mhi_pci
 
@@ -62,25 +56,15 @@ lsmod | grep mhi_net
 
 unload_wwan() {
 rmmod wwan_mhi
-rmmod dtr_mhi
 rmmod wwan
 
 lsmod | grep mhi_wwan
-lsmod | grep dtr_mhi
-}
-
-unload_qrtr() {
-rmmod qrtr_mhi
-rmmod qrtr_ns
-rmmod qrtr_main
-
-lsmod | grep qrtr
 }
 
 usage() {
 echo "Usage:"
 echo ""
-echo "$0 <mhi / pci / net / wwan / qrtr / all>"
+echo "$0 <mhi / pci / net / wwan / all>"
 echo "$0 will unload all modules"
 echo "Please run $0 as root"
 echo "<-h or --help> shows this text"
@@ -109,19 +93,13 @@ elif [[ $1 == "wwan" ]]
 then
 	unload_wwan
 	debug_wwan -
-elif [[ $1 == "qrtr" ]]
-then
-	unload_qrtr
-	debug_qrtr -
 elif [[ $1 == "" ]] || [[ $1 == "all" ]]
 then
-	unload_qrtr
 	unload_wwan
 	unload_net
 	unload_pci
 	unload_mhi
 
-	debug_qrtr -
 	debug_wwan -
 	debug_net -
 	debug_pci -

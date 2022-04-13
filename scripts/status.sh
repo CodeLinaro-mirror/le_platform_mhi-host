@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (c) 2021, The Linux Foundation. All rights reserved.
 
-status=$(lsmod | grep mhi | grep -v "qrtr" && lsmod | grep qrtr)
+status=$(lsmod | grep mhi)
 
 usage() {
 echo "Usage:"
@@ -24,8 +24,7 @@ if [[ $status ]]; then
 	echo Status: Running
 	echo ""
 	echo Modules loaded:
-	lsmod | grep mhi | grep -v "qrtr"
-	lsmod | grep qrtr
+	lsmod | grep mhi
 else
 	echo Status: Not running
 	echo ""

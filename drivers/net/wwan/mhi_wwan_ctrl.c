@@ -44,8 +44,11 @@ struct mhi_wwan_dev {
 	unsigned int rx_budget;
 };
 
-extern long mhi_dtr_ioctl(struct mhi_device *mhi_dev, unsigned int cmd,
-			  unsigned long arg);
+static long mhi_dtr_ioctl(struct mhi_device *mhi_dev, unsigned int cmd,
+			  unsigned long arg)
+{
+	return -ENOENT;
+}
 
 /* Increment RX budget and schedule RX refill if necessary */
 static void mhi_wwan_rx_budget_inc(struct mhi_wwan_dev *mhiwwan)

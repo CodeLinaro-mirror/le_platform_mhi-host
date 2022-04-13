@@ -32,13 +32,6 @@ echo -n "module mhi_net $1p" > /sys/kernel/debug/dynamic_debug/control
 debug_wwan() {
 echo -n "module wwan_core $1p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "module dtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
-}
-
-debug_qrtr() {
-echo -n "module qrtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "module qrtr_main $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "module qrtr_ns $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 usage() {
@@ -65,14 +58,12 @@ if [[ $(cat /boot/config-$(uname -r) | grep CONFIG_DYNAMIC_DEBUG) == "CONFIG_DYN
 		debug_pci -
 		debug_net -
 		debug_wwan -
-		debug_qrtr -
 		echo "Disabled dynamic debug for MHI and client drivers"
 	elif [[ $1 == "-t" || $1 == "--temp" ]]; then
 		debug_mhi +
 		debug_pci +
 		debug_net +
 		debug_wwan +
-		debug_qrtr +
 		echo "Temporarily enabled dynamic debug for MHI and client drivers"
 		if [[ $2 != "" ]]; then
 			sleep $2
@@ -83,14 +74,12 @@ if [[ $(cat /boot/config-$(uname -r) | grep CONFIG_DYNAMIC_DEBUG) == "CONFIG_DYN
 		debug_pci -
 		debug_net -
 		debug_wwan -
-		debug_qrtr -
 		echo "Disabled dynamic debug for MHI and client drivers"
 	else
 		debug_mhi +
 		debug_pci +
 		debug_net +
 		debug_wwan +
-		debug_qrtr +
 		echo "Enabled dynamic debug for MHI and client drivers"
 	fi
 else

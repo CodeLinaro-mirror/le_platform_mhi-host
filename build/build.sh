@@ -7,7 +7,7 @@ MHI_SCRIPT_RELATIVE_DIR=$(dirname "${BASH_SOURCE[0]}")
 usage() {
 echo "Usage:"
 echo ""
-echo "$0 <mhi / net / wwan / qrtr / all / clean> <all / clean>"
+echo "$0 <mhi / net / wwan / all / clean> <all / clean>"
 echo "$0 (with \"all\" or no arguments) will build all modules"
 echo "$0 clean or $0 all clean: will clean all modules"
 echo "$0 <module_name> clean will clean that module"
@@ -48,21 +48,16 @@ elif [[ $1 == "wwan" ]]
 then
 	make -C drivers/bus/mhi $2
 	make -C drivers/net/wwan $2
-elif [[ $1 == "qrtr" ]]
-then
-	make -C net/qrtr $2
 elif [[ $1 == "clean" ]]
 then
 	make -C drivers/bus/mhi $1
 	make -C drivers/net/wwan $1
 	make -C drivers/net/mhi $1
-	make -C net/qrtr $1
 elif [[ $1 == "" ]] || [[ $1 == "all" ]]
 then
 	make -C drivers/bus/mhi $2
 	make -C drivers/net/wwan $2
 	make -C drivers/net/mhi $2
-	make -C net/qrtr $2
 else
 	usage
 	exit 127
