@@ -220,6 +220,8 @@ EXPORT_SYMBOL_GPL(mhi_soc_reset);
 int mhi_map_single_no_bb(struct mhi_controller *mhi_cntrl,
 			 struct mhi_buf_info *buf_info)
 {
+	buf_info->dma_flag |=  MHI_DMA_STREAMING;
+
 	buf_info->p_addr = dma_map_single(mhi_cntrl->cntrl_dev,
 					  buf_info->v_addr, buf_info->len,
 					  buf_info->dir);
@@ -240,6 +242,8 @@ int mhi_map_single_use_bb(struct mhi_controller *mhi_cntrl,
 
 	if (buf_info->dir == DMA_TO_DEVICE)
 		memcpy(buf, buf_info->v_addr, buf_info->len);
+
+	buf_info->dma_flag |=  MHI_DMA_COHERENT;
 
 	buf_info->bb_addr = buf;
 
@@ -676,7 +680,7 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 				xfer_len = buf_info->len;
 
 			/* Unmap if it's not pre-mapped by client */
-			if (likely(!buf_info->pre_mapped))
+			if (likely(buf_info->dma_flag & MHI_DMA_STREAMING))
 				mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
 
 			result.buf_addr = buf_info->cb_buf;
@@ -1237,7 +1241,6 @@ int mhi_queue_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 
 	buf_info.p_addr = mhi_buf->dma_addr;
 	buf_info.cb_buf = mhi_buf;
-	buf_info.pre_mapped = true;
 	buf_info.len = len;
 
 	if (unlikely(mhi_chan->pre_alloc))
@@ -1262,8 +1265,7 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 
 	buf_info = buf_ring->wp;
 	WARN_ON(buf_info->used);
-	buf_info->pre_mapped = info->pre_mapped;
-	if (info->pre_mapped)
+	if (info->p_addr)
 		buf_info->p_addr = info->p_addr;
 	else
 		buf_info->v_addr = info->v_addr;
@@ -1276,7 +1278,7 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 
 	buf_info->len = info->len;
 
-	if (!info->pre_mapped) {
+	if (!info->p_addr) {
 		ret = mhi_cntrl->map_single(mhi_cntrl, buf_info);
 		if (ret)
 			return ret;
@@ -1651,7 +1653,7 @@ static void mhi_reset_data_chan(struct mhi_controller *mhi_cntrl,
 			mhi_cntrl->runtime_put(mhi_cntrl);
 		}
 
-		if (!buf_info->pre_mapped)
+		if (buf_info->dma_flag & MHI_DMA_STREAMING)
 			mhi_cntrl->unmap_single(mhi_cntrl, buf_info);
 
 		mhi_del_ring_element(mhi_cntrl, buf_ring);

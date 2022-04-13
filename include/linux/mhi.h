@@ -538,12 +538,14 @@ struct mhi_result {
  *        ECA - Event context array data
  *        CCA - Channel context array data
  * @dma_addr: IOMMU address of the buffer
+ * @streaming_dma: Passed dma_addr is streaming
  * @len: # of bytes
  */
 struct mhi_buf {
 	void *buf;
 	const char *name;
 	dma_addr_t dma_addr;
+	bool streaming_dma;
 	size_t len;
 };
 

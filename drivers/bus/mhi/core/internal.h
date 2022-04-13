@@ -533,6 +533,11 @@ struct mhi_cmd {
 	spinlock_t lock;
 };
 
+enum mhi_dma_flag {
+       MHI_DMA_COHERENT = 0x1, /* pre-mapped coherent dma */
+       MHI_DMA_STREAMING = 0x2, /* map_single/unmap_single done by core */
+};
+
 struct mhi_buf_info {
 	void *v_addr;
 	void *bb_addr;
@@ -541,8 +546,8 @@ struct mhi_buf_info {
 	dma_addr_t p_addr;
 	size_t len;
 	enum dma_data_direction dir;
+	enum mhi_dma_flag dma_flag;
 	bool used; /* Indicates whether the buffer is used or not */
-	bool pre_mapped; /* Already pre-mapped by client */
 };
 
 struct mhi_event {
