@@ -487,6 +487,11 @@ enum mhi_pm_state {
 #define MHI_EDL_DB			91
 #define MHI_RANDOM_U32_NONZERO(bmsk)	(prandom_u32_max(bmsk) + 1)
 
+/* MHI Timesync offsets */
+#define TIMESYNC_TIME_LOW_OFFSET (0x8)
+#define TIMESYNC_TIME_HIGH_OFFSET (0xC)
+#define TIMESYNC_CAP_ID (2)
+
 enum mhi_er_type {
 	MHI_ER_TYPE_INVALID = 0x0,
 	MHI_ER_TYPE_VALID = 0x1,

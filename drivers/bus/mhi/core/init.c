@@ -187,14 +187,74 @@ static ssize_t force_edl_store(struct device *dev,
 }
 static DEVICE_ATTR_WO(force_edl);
 
+static ssize_t time_show(struct device *dev,
+			 struct device_attribute *attr,
+			 char *buf)
+{
+	struct mhi_device *mhi_dev = to_mhi_device(dev);
+	ktime_t t_host;
+	u64 t_device;
+	int ret;
+
+	ret = mhi_get_remote_time_sync(mhi_dev, &t_host, &t_device);
+	if (ret) {
+		dev_err(dev, "Failed to obtain time, ret:%d\n", ret);
+		return scnprintf(buf, PAGE_SIZE,
+				 "Request failed or feature unsupported\n");
+	}
+
+	return scnprintf(buf, PAGE_SIZE, "local: %llu remote: %llu (ticks)\n",
+			 t_host, t_device);
+}
+static DEVICE_ATTR_RO(time);
+
 static struct attribute *mhi_dev_attrs[] = {
 	&dev_attr_serial_number.attr,
 	&dev_attr_oem_pk_hash.attr,
 	&dev_attr_edl_download.attr,
 	&dev_attr_force_edl.attr,
+	&dev_attr_time.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(mhi_dev);
+
+int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
+				  ktime_t (*time_get)(void))
+{
+	struct mhi_timesync *mhi_tsync = kzalloc(sizeof(*mhi_tsync),
+						 GFP_KERNEL);
+
+	if (!mhi_tsync)
+		return -ENOMEM;
+
+	mhi_tsync->time_get = time_get;
+	mhi_cntrl->timesync = mhi_tsync;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mhi_controller_setup_timesync);
+
+static int mhi_init_timesync(struct mhi_controller *mhi_cntrl)
+{
+	struct mhi_timesync *mhi_tsync = mhi_cntrl->timesync;
+	u32 time_offset;
+	int ret;
+
+	if (!mhi_tsync)
+		return -EINVAL;
+
+	ret = mhi_get_capability_offset(mhi_cntrl, TIMESYNC_CAP_ID,
+					&time_offset);
+	if (ret)
+		return ret;
+
+	mutex_init(&mhi_tsync->mutex);
+
+	/* save time_offset for obtaining time via MMIO register reads */
+	mhi_tsync->time_reg = mhi_cntrl->regs + time_offset;
+
+	return 0;
+}
 
 /* MHI protocol requires the transfer ring to be aligned with ring length */
 static int mhi_alloc_aligned_ring(struct mhi_controller *mhi_cntrl,
@@ -636,6 +696,10 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 				mhi_cntrl->max_tre_len);
 		}
 	}
+
+	ret = mhi_init_timesync(mhi_cntrl);
+	if (ret)
+		dev_err(dev, "Time synchronization setup failure\n");
 
 	return 0;
 }

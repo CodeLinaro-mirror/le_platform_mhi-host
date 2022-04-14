@@ -1965,3 +1965,73 @@ struct mhi_device *mhi_get_device_for_channel(struct mhi_controller *mhi_cntrl,
 	return mhi_cntrl->mhi_chan[channel].mhi_dev;
 }
 EXPORT_SYMBOL(mhi_get_device_for_channel);
+
+int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
+			     ktime_t *t_host,
+			     u64 *t_dev)
+{
+	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
+	struct device *dev = &mhi_cntrl->mhi_dev->dev;
+	struct mhi_timesync *mhi_tsync = mhi_cntrl->timesync;
+	u32 tdev_lo = U32_MAX, tdev_hi = U32_MAX;
+	int ret, i;
+
+	/* not all devices support time features */
+	if (!mhi_tsync)
+		return -EINVAL;
+
+	if (unlikely(MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state))) {
+		dev_err(dev, "MHI is not in active state, pm_state:%s\n",
+			to_mhi_pm_state_str(mhi_cntrl->pm_state));
+		return -EIO;
+	}
+
+	/* bring to M0 state */
+	ret = mhi_device_get_sync(mhi_cntrl->mhi_dev);
+	if (ret)
+		return ret;
+
+	mutex_lock(&mhi_tsync->mutex);
+	mhi_cntrl->runtime_get(mhi_cntrl);
+
+	/*
+	 * time critical code to fetch device times,
+	 * delay between these two steps should be
+	 * deterministic as possible.
+	 */
+	preempt_disable();
+	local_irq_disable();
+
+	/* Avoid skew with back to back reads to ensure link is in L0 */
+	for (i = 0; i < 3; i++) {
+		ret = mhi_read_reg(mhi_cntrl, mhi_tsync->time_reg,
+				   TIMESYNC_TIME_HIGH_OFFSET, &tdev_hi);
+		if (ret)
+			dev_err(dev, "Time HIGH register read error\n");
+
+		ret = mhi_read_reg(mhi_cntrl, mhi_tsync->time_reg,
+				   TIMESYNC_TIME_LOW_OFFSET, &tdev_lo);
+		if (ret)
+			dev_err(dev, "Time LOW register read error\n");
+
+		ret = mhi_read_reg(mhi_cntrl, mhi_tsync->time_reg,
+				   TIMESYNC_TIME_HIGH_OFFSET, &tdev_hi);
+		if (ret)
+			dev_err(dev, "Time HIGH register read error\n");
+	}
+
+	*t_dev = (u64) tdev_hi << 32 | tdev_lo;
+
+	*t_host = mhi_tsync->time_get();
+
+	local_irq_enable();
+	preempt_enable();
+
+	mhi_cntrl->runtime_put(mhi_cntrl);
+	mutex_unlock(&mhi_tsync->mutex);
+
+	mhi_device_put(mhi_cntrl->mhi_dev);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mhi_get_remote_time_sync);

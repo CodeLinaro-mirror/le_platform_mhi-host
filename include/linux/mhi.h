@@ -13,6 +13,7 @@
 #include <linux/skbuff.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/ktime.h>
 #include <linux/wait.h>
 #include <linux/workqueue.h>
 
@@ -319,6 +320,15 @@ struct mhi_controller_config {
 };
 
 /**
+ * struct mhi_timesync - For enabling use of MHI time synchronization feature
+ */
+struct mhi_timesync {
+	ktime_t (*time_get)(void);
+	void __iomem *time_reg;
+	struct mutex mutex;
+};
+
+/**
  * struct mhi_controller - Master MHI controller structure
  * @cntrl_dev: Pointer to the struct device of physical bus acting as the MHI
  *            controller (required)
@@ -459,6 +469,7 @@ struct mhi_controller {
 	spinlock_t transition_lock;
 	spinlock_t wlock;
 	struct mhi_link_info mhi_link_info;
+	struct mhi_timesync *timesync;
 	struct work_struct st_worker;
 	struct workqueue_struct *hiprio_wq;
 	wait_queue_head_t state_event;
@@ -897,6 +908,31 @@ bool mhi_queue_is_full(struct mhi_device *mhi_dev, enum dma_data_direction dir);
  */
 struct mhi_device *mhi_get_device_for_channel(struct mhi_controller *mhi_cntrl,
 					      u32 channel);
+
+/**
+ * mhi_controller_setup_timesync - Set support for time synchronization feature
+ * @mhi_cntrl: MHI controller
+ * @time_get: Callback to set for the MHI controller to receive host time
+ *
+ * Returns:
+ * 0 for success, error code for failure
+ */
+int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
+				  ktime_t (*time_get)(void));
+
+/**
+ * mhi_get_remote_time_sync - Get external soc time relative to local soc time
+ * using MMIO method.
+ * @mhi_dev: Device associated with the channels
+ * @t_host: Pointer to output local soc time
+ * @t_dev: Pointer to output remote soc time
+ *
+ * Returns:
+ * 0 for success, error code for failure
+ */
+int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
+			     ktime_t *t_host,
+			     u64 *t_dev);
 
 /* see Documentation/timers/timers-howto.rst for the thresholds */
 static inline void fsleep(unsigned long usecs)
