@@ -491,6 +491,11 @@ static int mhi_pci_get_bus_num(struct mhi_controller *mhi_cntrl)
 	return pci_domain_nr(pdev->bus);
 }
 
+static ktime_t mhi_local_time_get(void)
+{
+	return ktime_get();
+}
+
 static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	const struct mhi_pci_dev_info *info = (struct mhi_pci_dev_info *) id->driver_data;
@@ -553,6 +558,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	pci_enable_pcie_error_reporting(pdev);
 
 	err = mhi_register_controller(mhi_cntrl, mhi_cntrl_config);
+	if (err)
+		goto err_disable_reporting;
+
+	err = mhi_controller_setup_timesync(mhi_cntrl, &mhi_local_time_get);
 	if (err)
 		goto err_disable_reporting;
 
