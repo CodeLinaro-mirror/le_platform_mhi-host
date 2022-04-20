@@ -89,7 +89,7 @@ if [[ ! -f "out/install.sh" ]]; then
 	echo "cp \$$uname_str/etc/udev/rules.d/*.rules /etc/udev/rules.d/" >> out/install.sh
 	echo "udevadm control --reload" >> out/install.sh
 	echo "cp \$$uname_str/etc/mhi_dynamicdebug.sh /etc/mhi_dynamicdebug.sh" >> out/install.sh
-	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh\") 2>/dev/null | sort | uniq | crontab -" >> out/install.sh
+	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh -t\") 2>/dev/null | sort | uniq | crontab -" >> out/install.sh
 	echo "cd \$$uname_str" >> out/install.sh
 	echo "find . -path ./etc -prune -false -o -name *.ko | xargs -I % cp --parents % /" >> out/install.sh
 	echo "sync" >> out/install.sh
@@ -99,7 +99,7 @@ if [[ ! -f "out/install.sh" ]]; then
 	echo "cd - > /dev/null" >> out/install.sh
 	echo "cat \$$uname_str/etc/modules | xargs -I % modprobe %" >> out/install.sh
 	echo "cd - > /dev/null" >> out/install.sh
-	echo "bash /etc/mhi_dynamicdebug.sh" >> out/install.sh
+	echo "bash /etc/mhi_dynamicdebug.sh -t" >> out/install.sh
 	echo "echo Intallation complete" >> out/install.sh
 	chmod +x out/install.sh
 else
@@ -128,8 +128,9 @@ if [[ ! -f "out/uninstall.sh" ]]; then
 	find . -path ./out -prune -false -o -name *.ko | sed -r 's/^.{2}//' | xargs -I % echo "rm /lib/modules/\$$uname_str/kernel/%" >> out/uninstall.sh
 	find ./build/ -name *.rules -type f -printf "%f\n" | xargs -I % echo "rm /etc/udev/rules.d/%" >> out/uninstall.sh
 	echo "udevadm control --reload" >> out/uninstall.sh
+	echo "bash /etc/mhi_dynamicdebug.sh -d" >> out/install.sh
 	echo "rm /etc/mhi_dynamicdebug.sh" >> out/uninstall.sh
-	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh\") 2>/dev/null | grep -v /etc/mhi_dynamicdebug.sh | sort | uniq | crontab -" >> out/uninstall.sh
+	echo "(crontab -l; echo \"@reboot /etc/mhi_dynamicdebug.sh -t\") 2>/dev/null | grep -v /etc/mhi_dynamicdebug.sh | sort | uniq | crontab -" >> out/uninstall.sh
 	echo "cd /lib/modules/\$$uname_str" >> out/uninstall.sh
 	echo "depmod" >> out/uninstall.sh
 	echo "cd - > /dev/null" >> out/uninstall.sh
