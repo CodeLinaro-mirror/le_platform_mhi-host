@@ -3,33 +3,42 @@
 # Copyright (c) 2021, The Linux Foundation. All rights reserved.
 
 debug_mhi() {
-echo -n "file main.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file init.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file debugfs.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file pm.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file boot.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file uci.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module mhi_uci $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 debug_pci() {
-echo -n "file pci_generic.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module mhi_pci $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module pci-acpi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module acpi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "file pci.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "file pci-acpi.c $1p" > /sys/kernel/debug/dynamic_debug/control
+
+if [[ $1 == "+" ]]
+then
+	echo 0xffffffff > /sys/module/acpi/parameters/debug_level
+	echo 0x00C00000 > /sys/module/acpi/parameters/debug_layer
+elif [[ $1 == "-" ]]
+then
+	echo 0x00000000 > /sys/module/acpi/parameters/debug_level
+	echo 0x00000000 > /sys/module/acpi/parameters/debug_layer
+fi
 }
 
 debug_net() {
-echo -n "file net.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file proto_mbim.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module mhi_net $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 debug_wwan() {
-echo -n "file wwan_core.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file mhi_wwan_ctrl.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file mhi_dtr.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module wwan_core $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module dtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 debug_qrtr() {
-echo -n "file mhi.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file qrtr.c $1p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file ns.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module qrtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module qrtr_main $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module qrtr_ns $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 usage() {
@@ -37,6 +46,8 @@ echo "Usage:"
 echo ""
 echo "$0 to enable dynamic debug"
 echo "$0 <-r or --run> to enable dynamic debug and run dmesg filtered for MHI with --follow"
+echo "$0 <-t or --temp> to enable dynamic debug temporarily for specified number of seconds"
+echo "If seconds are not specified after -t / --temp flag, 60 seconds will be the default value"
 echo "$0 <-d or --disable> to disable dynamic debug"
 echo "$0 <-h or --help> shows this text"
 }
@@ -50,6 +61,24 @@ if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root" ; echo ""; usage; exit 
 
 if [[ $(cat /boot/config-$(uname -r) | grep CONFIG_DYNAMIC_DEBUG) == "CONFIG_DYNAMIC_DEBUG=y" ]]; then
 	if [[ $1 == "-d" || $1 == "--disable" ]]; then
+		debug_mhi -
+		debug_pci -
+		debug_net -
+		debug_wwan -
+		debug_qrtr -
+		echo "Disabled dynamic debug for MHI and client drivers"
+	elif [[ $1 == "-t" || $1 == "--temp" ]]; then
+		debug_mhi +
+		debug_pci +
+		debug_net +
+		debug_wwan +
+		debug_qrtr +
+		echo "Temporarily enabled dynamic debug for MHI and client drivers"
+		if [[ $2 != "" ]]; then
+			sleep $2
+		else
+			sleep 60
+		fi
 		debug_mhi -
 		debug_pci -
 		debug_net -

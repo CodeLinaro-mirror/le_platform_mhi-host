@@ -6,7 +6,8 @@ usage() {
 echo "Usage:"
 echo ""
 echo "$0 will build, load, and install MHI and related kernel modules for persistent use across reboots"
-echo "Verbose logging using dynamic debug will be enabled by default and will also stay enabled across reboots"
+echo "Verbose logging using dynamic debug will only be enabled for verifying this installation but will not stay enabled or be enabled across reboots"
+echo "In oder to have verbose logging using dynamic debug, user has to run /etc/mhi_dynamicdebug.sh after a reboot"
 echo "build/uninstall.sh reverses those actions"
 echo ""
 echo "Please run $0 as root"
@@ -42,10 +43,13 @@ mkdir -p /lib/firmware/qcom/sdx65m
 cp build/*.rules /etc/udev/rules.d/
 udevadm control --reload
 cp scripts/debug.sh /etc/mhi_dynamicdebug.sh
-(crontab -l; echo "@reboot /etc/mhi_dynamicdebug.sh") 2>/dev/null | sort | uniq | crontab -
+(crontab -l; echo "@reboot /etc/mhi_dynamicdebug.sh -t") 2>/dev/null | sort | uniq | crontab -
 cd - > /dev/null
 
 cd /lib/modules/$MHI_KERNEL_VER/
 depmod
+
+sleep 15
+bash /etc/mhi_dynamicdebug.sh -d
 
 echo "Done"

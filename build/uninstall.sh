@@ -28,8 +28,9 @@ find . -path ./out -prune -false -o -name *.ko | sed 's:.*/::' | grep -Po '.*(?=
 find . -path ./out -prune -false -o -name *.ko | sed -r 's/^.{2}//' | xargs -I % rm /lib/modules/$MHI_KERNEL_VER/kernel/%
 find ./build/ -name *.rules -type f -printf "%f\n" | xargs -I % rm /etc/udev/rules.d/%
 udevadm control --reload
+bash /etc/mhi_dynamicdebug.sh -d
 rm /etc/mhi_dynamicdebug.sh
-(crontab -l; echo "@reboot /etc/mhi_dynamicdebug.sh") 2>/dev/null | grep -v /etc/mhi_dynamicdebug.sh | sort | uniq | crontab -
+(crontab -l; echo "@reboot /etc/mhi_dynamicdebug.sh -t") 2>/dev/null | grep -v /etc/mhi_dynamicdebug.sh | sort | uniq | crontab -
 cd - > /dev/null
 
 bash $MHI_BUILD_ROOT/build/build.sh clean

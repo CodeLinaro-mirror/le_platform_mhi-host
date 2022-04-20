@@ -2,6 +2,45 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (c) 2021, The Linux Foundation. All rights reserved.
 
+debug_mhi() {
+echo -n "module mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module mhi_uci $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
+debug_pci() {
+echo -n "module mhi_pci $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module pci-acpi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module acpi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "file pci.c $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "file pci-acpi.c $1p" > /sys/kernel/debug/dynamic_debug/control
+
+if [[ $1 == "+" ]]
+then
+	echo 0xffffffff > /sys/module/acpi/parameters/debug_level
+	echo 0x00C00000 > /sys/module/acpi/parameters/debug_layer
+elif [[ $1 == "-" ]]
+then
+	echo 0x00000000 > /sys/module/acpi/parameters/debug_level
+	echo 0x00000000 > /sys/module/acpi/parameters/debug_layer
+fi
+}
+
+debug_net() {
+echo -n "module mhi_net $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
+debug_wwan() {
+echo -n "module wwan_core $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module dtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
+debug_qrtr() {
+echo -n "module qrtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module qrtr_main $1p" > /sys/kernel/debug/dynamic_debug/control
+echo -n "module qrtr_ns $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
 load_mhi() {
 if ! insmod drivers/bus/mhi/core/mhi.ko; then
 	echo "Failed to load KO"
@@ -20,15 +59,6 @@ fi
 lsmod | grep mhi
 }
 
-debug_mhi() {
-echo -n "file main.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file init.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file debugfs.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file pm.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file boot.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file uci.c +p" > /sys/kernel/debug/dynamic_debug/control
-}
-
 load_pci() {
 if ! insmod drivers/bus/mhi/mhi_pci.ko; then
 	echo "Failed to load KO"
@@ -38,10 +68,6 @@ fi
 lsmod | grep mhi_pci
 }
 
-debug_pci() {
-echo -n "file pci_generic.c +p" > /sys/kernel/debug/dynamic_debug/control
-}
-
 load_net() {
 if ! insmod drivers/net/mhi/mhi_net.ko; then
 	echo "Failed to load KO"
@@ -49,11 +75,6 @@ if ! insmod drivers/net/mhi/mhi_net.ko; then
 fi
 
 lsmod | grep mhi_net
-}
-
-debug_net() {
-echo -n "file net.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file proto_mbim.c +p" > /sys/kernel/debug/dynamic_debug/control
 }
 
 load_wwan() {
@@ -74,12 +95,6 @@ lsmod | grep wwan
 lsmod | grep dtr
 }
 
-debug_wwan() {
-echo -n "file wwan_core.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file mhi_wwan_ctrl.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file mhi_dtr.c +p" > /sys/kernel/debug/dynamic_debug/control
-}
-
 load_qrtr() {
 if ! insmod net/qrtr/qrtr_main.ko; then
 	echo "Failed to load KO"
@@ -97,16 +112,11 @@ fi
 lsmod | grep qrtr
 }
 
-debug_qrtr() {
-echo -n "file mhi.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file qrtr.c +p" > /sys/kernel/debug/dynamic_debug/control
-echo -n "file ns.c +p" > /sys/kernel/debug/dynamic_debug/control
-}
-
 usage() {
 echo "Usage:"
 echo ""
 echo "$0 <mhi / pci / net / wwan / qrtr / all> <-v for verbose output to enable dynamic debug>"
+echo "If verbose flag is used, user must manually disable dynamic debug if needed, using scripts/debug.sh -d"
 echo "$0 will load all modules"
 echo "Please run $0 as root"
 echo "<-h or --help> shows this text"
@@ -141,35 +151,35 @@ then
 	load_mhi
 	if [[ $2 == "-v" ]]
 	then
-		debug_mhi
+		debug_mhi +
 	fi
 elif [[ $1 == "pci" ]]
 then
 	load_pci
 	if [[ $2 == "-v" ]]
 	then
-		debug_pci
+		debug_pci +
 	fi
 elif [[ $1 == "net" ]]
 then
 	load_net
 	if [[ $2 == "-v" ]]
 	then
-		debug_net
+		debug_net +
 	fi
 elif [[ $1 == "wwan" ]]
 then
 	load_wwan
 	if [[ $2 == "-v" ]]
 	then
-		debug_wwan
+		debug_wwan +
 	fi
 elif [[ $1 == "qrtr" ]]
 then
 	load_qrtr
 	if [[ $2 == "-v" ]]
 	then
-		debug_qrtr
+		debug_qrtr +
 	fi
 elif [[ $1 == "" ]] || [[ $1 == "all" ]] || [[ $1 == "-v" ]]
 then
@@ -179,15 +189,15 @@ then
 	load_qrtr
 	if [[ $1 == "-v" ]] || [[ $2 == "-v" ]]
 	then
-		debug_mhi
-		debug_net
-		debug_wwan
-		debug_qrtr
+		debug_mhi +
+		debug_net +
+		debug_wwan +
+		debug_qrtr +
 	fi
 	load_pci
 	if [[ $1 == "-v" ]] || [[ $2 == "-v" ]]
 	then
-		debug_pci
+		debug_pci +
 	fi
 else
 	usage
