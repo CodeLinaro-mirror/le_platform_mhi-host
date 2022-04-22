@@ -275,6 +275,7 @@ struct wwan_port *wwan_create_port(struct device *parent,
 
 	port->type = type;
 	port->ops = ops;
+	port->flush = false;
 	mutex_init(&port->ops_lock);
 	skb_queue_head_init(&port->rxq);
 	init_waitqueue_head(&port->waitqueue);
@@ -465,11 +466,15 @@ static int wwan_wait_rx(struct wwan_port *port, bool nonblock)
 
 	ret = wait_event_interruptible(port->waitqueue, port->flush ||
 				       !is_read_blocked(port));
-	if (ret)
+	if (ret) {
+		port->flush = false;
 		return -ERESTARTSYS;
+	}
 
-	if (port->flush)
+	if (port->flush) {
+		port->flush = false;
 		return -ERESTARTSYS;
+	}
 
 	return 0;
 }
@@ -500,6 +505,7 @@ static int wwan_port_fops_open(struct inode *inode, struct file *file)
 	file->private_data = port;
 	stream_open(inode, file);
 
+	port->flush = false;
 	err = wwan_port_op_start(port);
 	if (err)
 		put_device(&port->dev);
