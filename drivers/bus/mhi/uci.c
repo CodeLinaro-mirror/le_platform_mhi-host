@@ -237,6 +237,7 @@ static int mhi_uci_open(struct inode *inode, struct file *filp)
 	kref_get(&udev->ref_count);
 	mutex_unlock(&uci_drv_mutex);
 
+	udev->flush = false;
 	ret = mhi_uci_dev_start_chan(udev);
 	if (ret) {
 		kref_put(&udev->ref_count, mhi_uci_dev_release);
@@ -418,10 +419,12 @@ static ssize_t mhi_uci_read(struct file *file,
 		if (ret == -ERESTARTSYS) {
 			dev_dbg(dev, "Interrupted by a signal in %s, exiting\n",
 				__func__);
+			udev->flush = false;
 			goto err_mtx_unlock;
 		}
 
 		if (udev->flush) {
+			udev->flush = false;
 			ret = -ERESTARTSYS;
 			goto err_mtx_unlock;
 		}
