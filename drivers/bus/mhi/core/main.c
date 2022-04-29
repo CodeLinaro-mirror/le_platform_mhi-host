@@ -1309,7 +1309,7 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	struct mhi_ring *buf_ring, *tre_ring;
 	struct mhi_tre *mhi_tre;
 	struct mhi_buf_info *buf_info;
-	int eot, eob, chain, bei;
+	int eot, eob, chain, bei, mirror;
 	int ret;
 
 	buf_ring = &mhi_chan->buf_ring;
@@ -1339,6 +1339,7 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	eob = !!(flags & MHI_EOB);
 	eot = !!(flags & MHI_EOT);
 	chain = !!(flags & MHI_CHAIN);
+	mirror = !!(flags & MHI_MIRROR);
 
 	/* honor bei flag if interrupt moderation is disabled */
 	bei = !!(mhi_chan->intmod ? mhi_chan->intmod : flags & MHI_BEI);
@@ -1346,7 +1347,7 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	mhi_tre = tre_ring->wp;
 	mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
 	mhi_tre->dword[0] = info->len;
-	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
+	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(mirror, bei, eot, eob, chain);
 
 	dev_dbg(dev, "WP: 0x%llx TRE: 0x%llx 0x%08x 0x%08x\n",
 		(unsigned long long int) mhi_tre, mhi_tre->ptr,
@@ -1380,7 +1381,7 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	struct mhi_tre *mhi_tre;
 	struct mhi_buf_info *buf_info;
 	void *cur_buf_ring_wp, *cur_tre_ring_wp;
-	int eot, eob, chain, bei;
+	int eot, eob, chain, bei, mirror;
 	int i = 0, j, ret;
 
 	buf_ring = &mhi_chan->buf_ring;
@@ -1423,6 +1424,7 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 		eob = !!(flags[i] & MHI_EOB);
 		eot = !!(flags[i] & MHI_EOT);
 		chain = !!(flags[i] & MHI_CHAIN);
+		mirror = !!(flags[i] & MHI_MIRROR);
 
 		buf_info->sg_enabled = !!(flags[i] & MHI_SG);
 
@@ -1433,7 +1435,7 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 		mhi_tre = tre_ring->wp;
 		mhi_tre->ptr = MHI_TRE_DATA_PTR(buf_info->p_addr);
 		mhi_tre->dword[0] = bufs[i].len;
-		mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
+		mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(mirror, bei, eot, eob, chain);
 
 		if (mhi_chan->dir == DMA_TO_DEVICE)
 			atomic_inc(&mhi_cntrl->pending_pkts);

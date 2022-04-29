@@ -82,6 +82,7 @@ enum mhi_callback {
  * @MHI_BEI: Block event interrupt
  * @MHI_NO_DB: Skip ringing doorbell
  * @MHI_SG: scatter-gather enabled, single xfer call back to client
+ * @MHI_MIRROR: Set to mirror TRE for debug purposes
  */
 enum mhi_flags {
 	MHI_EOB = BIT(0),
@@ -90,6 +91,7 @@ enum mhi_flags {
 	MHI_BEI = BIT(3),
 	MHI_NO_DB = BIT(4),
 	MHI_SG = BIT(5),
+	MHI_MIRROR = BIT(6),
 };
 
 /**

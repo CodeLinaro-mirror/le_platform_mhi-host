@@ -334,8 +334,8 @@ enum mhi_cmd_type {
 
 /* Transfer descriptor macros */
 #define MHI_TRE_DATA_PTR(ptr) (ptr)
-#define MHI_TRE_DATA_DWORD1(bei, ieot, ieob, chain) ((2 << 16) | (bei << 10) \
-	| (ieot << 9) | (ieob << 8) | chain)
+#define MHI_TRE_DATA_DWORD1(mirror, bei, ieot, ieob, chain) ((mirror << 24) \
+	| (2 << 16) | (bei << 10) | (ieot << 9) | (ieob << 8) | chain)
 
 /* RSC transfer descriptor macros */
 #define MHI_RSCTRE_DATA_PTR(ptr, len) (((u64)len << 48) | ptr)
