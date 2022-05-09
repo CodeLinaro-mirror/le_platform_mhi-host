@@ -617,10 +617,12 @@ static int wwan_port_fops_flush(struct file *filp, fl_owner_t id)
 	pr_err("%s: %d:%s flush\n", wwan_port_type_str[port->type],
 	       (int) task_pid_nr(current), current->comm);
 
-	skb_queue_purge(&port->rxq);
-	port->flush = true;
+	if (port->type == WWAN_PORT_QCDM || port->type == WWAN_PORT_FIREHOSE) {
+		skb_queue_purge(&port->rxq);
+		port->flush = true;
 
-	wake_up_interruptible(&port->waitqueue);
+		wake_up_interruptible(&port->waitqueue);
+	}
 
 	return 0;
 }
