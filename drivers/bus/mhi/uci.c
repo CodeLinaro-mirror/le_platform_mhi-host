@@ -501,12 +501,14 @@ static int mhi_uci_flush(struct file *file, fl_owner_t id)
 
 	dev_err(dev, "%s: flush called from %d:%s\n", __func__,
 		(int) task_pid_nr(current), current->comm);
-	mutex_lock(&udev->lock);
-	udev->flush = true;
-	if (udev->uchan)
-		wake_up(&udev->uchan->dl_wq);
-	mutex_unlock(&udev->lock);
 
+	if (!strcmp(mhi_dev->name, "SAHARA") || !strcmp(mhi_dev->name, "IP_HW_ADPL")) {
+		mutex_lock(&udev->lock);
+		udev->flush = true;
+		if (udev->uchan)
+			wake_up(&udev->uchan->dl_wq);
+		mutex_unlock(&udev->lock);
+	}
 	return 0;
 }
 
