@@ -18,6 +18,8 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 
+#define LASSEN_V1_DEVICE_ID 0x600
+
 #define MHI_PCI_DEFAULT_BAR_NUM 0
 
 #define MHI_POST_RESET_DELAY_MS 500
@@ -105,7 +107,7 @@ struct mhi_pci_dev_info {
 		.channel = ch_num,					\
 	}
 
-const struct mhi_channel_config modem_qcom_v1_mhi_lsn_channels[] = {
+struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
 	/* SBL channels  */
 	MHI_CHANNEL_CONFIG_UL(2, "SAHARA", 128, 1, MHI_EE_SBL,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
@@ -152,6 +154,9 @@ const struct mhi_channel_config modem_qcom_v1_mhi_lsn_channels[] = {
 	MHI_CHANNEL_CONFIG_DL(51, "IP_SW2", 128, 7, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false,
 			      false, false, 0, 0),
+};
+
+struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
 	/* HW channels */
 	MHI_CHANNEL_CONFIG_UL(104, "IP_HW0", 2048, 8, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
@@ -165,7 +170,26 @@ const struct mhi_channel_config modem_qcom_v1_mhi_lsn_channels[] = {
 			      false, false, 0, 0),
 };
 
-static struct mhi_event_config modem_qcom_v1_mhi_lsn_events[] = {
+static struct mhi_event_config modem_qcom_v1_mhi_lsn_pf_events[] = {
+	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(2, 3, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(3, 4, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(4, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(5, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(6, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(7, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+};
+
+static struct mhi_event_config modem_qcom_v1_mhi_lsn_vf_events[] = {
 	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
 			 false, false, false, 0),
 	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
@@ -192,27 +216,36 @@ static struct mhi_event_config modem_qcom_v1_mhi_lsn_events[] = {
 			 true, false, false, 107),
 };
 
-static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_config = {
+static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_pf_config = {
 	.max_channels = 128,
 	.timeout_ms = 120000,
-	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_channels),
-	.ch_cfg = modem_qcom_v1_mhi_lsn_channels,
-	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_events),
-	.event_cfg = modem_qcom_v1_mhi_lsn_events,
+	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_pf_channels),
+	.ch_cfg = modem_qcom_v1_mhi_lsn_pf_channels,
+	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_pf_events),
+	.event_cfg = modem_qcom_v1_mhi_lsn_pf_events,
 };
 
-static const struct mhi_pci_dev_info mhi_qcom_lassen_info = {
+static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_vf_config = {
+	.max_channels = 128,
+	.timeout_ms = 120000,
+	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_vf_channels),
+	.ch_cfg = modem_qcom_v1_mhi_lsn_vf_channels,
+	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_vf_events),
+	.event_cfg = modem_qcom_v1_mhi_lsn_vf_events,
+};
+
+static struct mhi_pci_dev_info mhi_qcom_lassen_info = {
 	.name = "qcom-lassen",
 	.fw = "qcom/lassen/xbl_s.melf",
 	.edl = "qcom/lassen/edl.mbn",
-	.config = &modem_qcom_v1_mhi_lsn_config,
+	.config = &modem_qcom_v1_mhi_lsn_pf_config,
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
 	.dma_data_width = 32,
 	.sideband_wake = false,
 };
 
 static const struct pci_device_id mhi_pci_id_table[] = {
-	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, 0x0600),
+	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, LASSEN_V1_DEVICE_ID),
 		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_info },
 	{  }
 };
@@ -514,7 +547,11 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	INIT_WORK(&mhi_pdev->recovery_work, mhi_pci_recovery_work);
 	timer_setup(&mhi_pdev->health_check_timer, health_check, 0);
 
-	mhi_cntrl_config = info->config;
+	if (id->device == LASSEN_V1_DEVICE_ID && pdev->is_virtfn)
+		mhi_cntrl_config = &modem_qcom_v1_mhi_lsn_vf_config;
+	else
+		mhi_cntrl_config = info->config;
+
 	mhi_cntrl = &mhi_pdev->mhi_cntrl;
 
 	mhi_cntrl->cntrl_dev = &pdev->dev;
