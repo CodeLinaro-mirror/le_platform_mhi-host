@@ -545,12 +545,13 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 		return -ENOMEM;
 
 	INIT_WORK(&mhi_pdev->recovery_work, mhi_pci_recovery_work);
-	timer_setup(&mhi_pdev->health_check_timer, health_check, 0);
 
-	if (id->device == LASSEN_V1_DEVICE_ID && pdev->is_virtfn)
+	if (id->device == LASSEN_V1_DEVICE_ID && pdev->is_virtfn) {
 		mhi_cntrl_config = &modem_qcom_v1_mhi_lsn_vf_config;
-	else
+	} else {
 		mhi_cntrl_config = info->config;
+		timer_setup(&mhi_pdev->health_check_timer, health_check, 0);
+	}
 
 	mhi_cntrl = &mhi_pdev->mhi_cntrl;
 
@@ -622,7 +623,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	set_bit(MHI_PCI_DEV_STARTED, &mhi_pdev->status);
 
 	/* start health check */
-	mod_timer(&mhi_pdev->health_check_timer, jiffies + HEALTH_CHECK_PERIOD);
+	if ((pdev->is_physfn && id->device == LASSEN_V1_DEVICE_ID) ||
+	    id->device != LASSEN_V1_DEVICE_ID)
+		mod_timer(&mhi_pdev->health_check_timer,
+			  jiffies + HEALTH_CHECK_PERIOD);
 
 	/* Only allow runtime-suspend if PME capable (for wakeup) */
 	if (pci_pme_capable(pdev, PCI_D3hot)) {
