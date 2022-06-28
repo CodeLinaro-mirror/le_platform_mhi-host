@@ -2,7 +2,7 @@
 /* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.*/
 
 #include <linux/kernel.h>
-#include <linux/mhi.h>
+#include <linux/local_mhi.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/poll.h>

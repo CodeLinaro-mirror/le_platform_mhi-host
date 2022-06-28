@@ -26,16 +26,6 @@ typedef unsigned long kernel_ulong_t;
 #define MHI_DEVICE_MODALIAS_FMT "mhi:%s"
 #define MHI_NAME_SIZE 32
 
-/**
- * struct mhi_device_id - MHI device identification
- * @chan: MHI channel name
- * @driver_data: driver data;
- */
-struct mhi_device_id {
-	const char chan[MHI_NAME_SIZE];
-	kernel_ulong_t driver_data;
-};
-
 struct mhi_chan;
 struct mhi_event;
 struct mhi_ctxt;
@@ -935,16 +925,5 @@ int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
 			     ktime_t *t_host,
 			     u64 *t_dev);
-
-/* see Documentation/timers/timers-howto.rst for the thresholds */
-static inline void fsleep(unsigned long usecs)
-{
-	if (usecs <= 10)
-		udelay(usecs);
-	else if (usecs <= 20000)
-		usleep_range(usecs, 2 * usecs);
-	else
-		msleep(DIV_ROUND_UP(usecs, 1000));
-}
 
 #endif /* _MHI_H_ */

@@ -488,7 +488,7 @@ static int wwan_port_fops_open(struct inode *inode, struct file *file)
 		return PTR_ERR(port);
 
 	file->private_data = port;
-	stream_open(inode, file);
+	simple_open(inode, file);
 
 	err = wwan_port_op_start(port);
 	if (err)

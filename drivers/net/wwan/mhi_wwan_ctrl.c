@@ -2,7 +2,7 @@
 /* Copyright (c) 2021, Linaro Ltd <loic.poulain@linaro.org> */
 /* Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved. */
 #include <linux/kernel.h>
-#include <linux/mhi.h>
+#include <linux/local_mhi.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/termios.h>
@@ -185,7 +185,7 @@ static long mhi_wwan_ctrl_ioctl(struct wwan_port *port, unsigned int cmd,
 {
 	struct mhi_wwan_dev *mhiwwan = wwan_port_get_drvdata(port);
 	struct mhi_device *mhi_dev = mhiwwan->mhi_dev;
-	long ret;
+	long ret = 0;
 
 	if (cmd == TIOCMGET) {
 		spin_lock_bh(&mhiwwan->tiocm_lock);

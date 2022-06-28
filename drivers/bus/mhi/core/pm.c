@@ -10,7 +10,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/interrupt.h>
 #include <linux/list.h>
-#include <linux/mhi.h>
+#include <linux/local_mhi.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/wait.h>

@@ -11,7 +11,7 @@
 #include <linux/aer.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/mhi.h>
+#include <linux/local_mhi.h>
 #include <linux/module.h>
 #include <linux/pci.h>
 #include <linux/pm_runtime.h>

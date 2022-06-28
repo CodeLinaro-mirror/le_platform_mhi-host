@@ -5,7 +5,7 @@
  */
 
 #include <linux/if_arp.h>
-#include <linux/mhi.h>
+#include <linux/local_mhi.h>
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/netdevice.h>
