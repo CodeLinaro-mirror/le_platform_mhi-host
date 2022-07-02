@@ -378,13 +378,12 @@ static int mhi_pci_get_irqs(struct mhi_controller *mhi_cntrl,
 	int *irq;
 
 	/*
-	 * Alloc one MSI/MSI-X vector for BHI + one vector per event ring.
+	 * Alloc one MSI vector for BHI + one vector per event ring, ideally...
 	 * No explicit pci_free_irq_vectors required, done by pcim_release.
 	 */
 	mhi_cntrl->nr_irqs = 1 + mhi_cntrl_config->num_events;
 
-	nr_vectors = pci_alloc_irq_vectors(pdev, 1, mhi_cntrl->nr_irqs,
-					   PCI_IRQ_MSI | PCI_IRQ_MSIX);
+	nr_vectors = pci_alloc_irq_vectors(pdev, 1, mhi_cntrl->nr_irqs, PCI_IRQ_MSI);
 	if (nr_vectors < 0) {
 		dev_err(&pdev->dev, "Error allocating MSI vectors %d\n",
 			nr_vectors);
