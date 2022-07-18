@@ -34,7 +34,6 @@
  * @fw: firmware path (if any)
  * @edl: emergency download mode firmware path (if any)
  * @bar_num: PCI base address register to use for MHI MMIO register space
- * @dma_data_width: DMA transfer word size (32 or 64 bits)
  * @sideband_wake: Devices using dedicated sideband GPIO for wakeup instead
  *		   of inband wake support (such as sdx24)
  * @auto_edl_load: Do not wait for sysfs triggers to proceed with image download
@@ -46,7 +45,6 @@ struct mhi_pci_dev_info {
 	const char *fw;
 	const char *edl;
 	unsigned int bar_num;
-	unsigned int dma_data_width;
 	bool sideband_wake;
 	bool auto_edl_load;
 };
@@ -219,6 +217,7 @@ static struct mhi_event_config modem_qcom_v1_mhi_lsn_vf_events[] = {
 static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_pf_config = {
 	.max_channels = 128,
 	.timeout_ms = 120000,
+	.dma_data_width = 32,
 	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_pf_channels),
 	.ch_cfg = modem_qcom_v1_mhi_lsn_pf_channels,
 	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_pf_events),
@@ -228,6 +227,7 @@ static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_pf_config = {
 static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_vf_config = {
 	.max_channels = 128,
 	.timeout_ms = 120000,
+	.dma_data_width = 40,
 	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_vf_channels),
 	.ch_cfg = modem_qcom_v1_mhi_lsn_vf_channels,
 	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_vf_events),
@@ -240,7 +240,6 @@ static struct mhi_pci_dev_info mhi_qcom_lassen_info = {
 	.edl = "qcom/lassen/edl.mbn",
 	.config = &modem_qcom_v1_mhi_lsn_pf_config,
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
-	.dma_data_width = 32,
 	.sideband_wake = false,
 };
 
@@ -556,7 +555,7 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	mhi_cntrl->cntrl_dev = &pdev->dev;
 	mhi_cntrl->iova_start = 0;
-	mhi_cntrl->iova_stop = (dma_addr_t)DMA_BIT_MASK(info->dma_data_width);
+	mhi_cntrl->iova_stop = (dma_addr_t)DMA_BIT_MASK(mhi_cntrl_config->dma_data_width);
 	mhi_cntrl->fw_image = info->fw;
 	mhi_cntrl->edl_image = info->edl;
 
@@ -575,7 +574,7 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (info->auto_edl_load)
 		mhi_cntrl->edl_download = true;
 
-	err = mhi_pci_claim(mhi_cntrl, info->bar_num, DMA_BIT_MASK(info->dma_data_width));
+	err = mhi_pci_claim(mhi_cntrl, info->bar_num, DMA_BIT_MASK(mhi_cntrl_config->dma_data_width));
 	if (err)
 		return err;
 

@@ -293,6 +293,7 @@ struct mhi_event_config {
  * @timeout_ms: Timeout value for operations. 0 means use default
  * @buf_len: Size of automatically allocated buffers. 0 means use default
  * @num_channels: Number of channels defined in @ch_cfg
+ * @dma_data_width: DMA transfer word size (32 or 64 bits)
  * @ch_cfg: Array of defined channels
  * @num_events: Number of event rings defined in @event_cfg
  * @event_cfg: Array of defined event rings
@@ -304,6 +305,7 @@ struct mhi_controller_config {
 	u32 timeout_ms;
 	u32 buf_len;
 	u32 num_channels;
+	u32 dma_data_width;
 	const struct mhi_channel_config *ch_cfg;
 	u32 num_events;
 	struct mhi_event_config *event_cfg;
