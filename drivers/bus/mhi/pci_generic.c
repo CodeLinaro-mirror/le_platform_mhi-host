@@ -209,7 +209,7 @@ static struct mhi_event_config modem_qcom_v1_mhi_lsn_vf_events[] = {
 	MHI_EVENT_CONFIG(8, 7, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
 			 true, false, false, 104),
 	MHI_EVENT_CONFIG(9, 8, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
-			 true, false, false, 105),
+			 true, true, false, 105),
 	MHI_EVENT_CONFIG(10, 9, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
 			 true, false, false, 106),
 	MHI_EVENT_CONFIG(11, 10, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
