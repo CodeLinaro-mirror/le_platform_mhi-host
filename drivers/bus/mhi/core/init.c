@@ -688,14 +688,16 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 
 	ret = mhi_get_capability_offset(mhi_cntrl, MAX_TRE_LEN_CAP_ID,
 					&mtl_offset);
-	if (!ret) {
+	/*if (!ret) {
 		ret = mhi_read_reg(mhi_cntrl, base, mtl_offset, &val);
 		if (!ret) {
 			mhi_cntrl->max_tre_len = val;
 			dev_dbg(dev, "Max tre length supported by device %zu\n",
 				mhi_cntrl->max_tre_len);
 		}
-	}
+	}*/
+
+	mhi_cntrl->max_tre_len = 0x1fffff;
 
 	ret = mhi_init_timesync(mhi_cntrl);
 	if (ret)
