@@ -36,6 +36,8 @@ fi
 
 cd $MHI_BUILD_ROOT
 
+install $MHI_BUILD_ROOT/include/linux/local_mhi.h /usr/include/linux
+
 if [[ $1 == "mhi" ]]
 then
 	make -C drivers/bus/mhi $2
