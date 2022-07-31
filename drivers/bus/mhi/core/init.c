@@ -430,6 +430,7 @@ int mhi_init_dev_ctxt(struct mhi_controller *mhi_cntrl)
 		tmp |= (mhi_chan->db_cfg.brstmode << CHAN_CTX_BRSTMODE_SHIFT);
 		tmp &= ~CHAN_CTX_POLLCFG_MASK;
 		tmp |= (mhi_chan->db_cfg.pollcfg << CHAN_CTX_POLLCFG_SHIFT);
+		tmp |= (mhi_chan->db_cfg.ovf_dis << CHAN_CTX_OVF_DISABLE);
 		chan_ctxt->chcfg = tmp;
 
 		chan_ctxt->chtype = mhi_chan->type;
@@ -938,6 +939,7 @@ static int parse_ch_cfg(struct mhi_controller *mhi_cntrl,
 
 		mhi_chan->ee_mask = ch_cfg->ee_mask;
 		mhi_chan->db_cfg.pollcfg = ch_cfg->pollcfg;
+		mhi_chan->db_cfg.ovf_dis = ch_cfg->ovf_disable;
 		mhi_chan->lpm_notify = ch_cfg->lpm_notify;
 		mhi_chan->offload_ch = ch_cfg->offload_channel;
 		mhi_chan->db_cfg.reset_req = ch_cfg->doorbell_mode_switch;

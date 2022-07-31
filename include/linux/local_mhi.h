@@ -253,6 +253,7 @@ struct mhi_channel_config {
 	enum mhi_ch_type type;
 	u32 ee_mask;
 	u32 pollcfg;
+	bool ovf_disable;
 	enum mhi_db_brst_mode doorbell;
 	bool lpm_notify;
 	bool offload_channel;

@@ -50,7 +50,7 @@ struct mhi_pci_dev_info {
 };
 
 #define MHI_CHANNEL_CONFIG_UL(ch_num, ch_name, elems, ev_ring, ee,	\
-			      dbmode, lpm, poll, offload, modeswitch,	\
+			      dbmode, lpm, poll, overflow_disable, offload, modeswitch,	\
 			      ch_type)					\
 	{								\
 		.dir = DMA_TO_DEVICE,					\
@@ -60,6 +60,7 @@ struct mhi_pci_dev_info {
 		.event_ring = ev_ring,					\
 		.ee_mask = BIT(ee),					\
 		.pollcfg = poll,					\
+		.ovf_disable = overflow_disable,			\
 		.doorbell = dbmode,					\
 		.lpm_notify = lpm,					\
 		.offload_channel = offload,				\
@@ -71,7 +72,7 @@ struct mhi_pci_dev_info {
 	}
 
 #define MHI_CHANNEL_CONFIG_DL(ch_num, ch_name, elems, ev_ring, ee,	\
-			      dbmode, lpm, poll, offload, modeswitch,	\
+			      dbmode, lpm, poll, overflow_disable, offload, modeswitch,	\
 			      wake, autoq, local_el, ch_type)		\
 	{								\
 		.dir = DMA_FROM_DEVICE,					\
@@ -81,6 +82,7 @@ struct mhi_pci_dev_info {
 		.event_ring = ev_ring,					\
 		.ee_mask = BIT(ee),					\
 		.pollcfg = poll,					\
+		.ovf_disable = overflow_disable,			\
 		.doorbell = dbmode,					\
 		.lpm_notify = lpm,					\
 		.offload_channel = offload,				\
@@ -108,63 +110,63 @@ struct mhi_pci_dev_info {
 struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
 	/* SBL channels  */
 	MHI_CHANNEL_CONFIG_UL(2, "SAHARA", 128, 1, MHI_EE_SBL,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0,false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(3, "SAHARA", 128, 1, MHI_EE_SBL,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_DL(25, "BL", 32, 1, MHI_EE_SBL,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	/* AMSS channels */
 	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 64, 2, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 64, 2, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 64, 3, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 64, 3, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(14, "NMEA", 32, 4, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(15, "NMEA", 32, 4, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(16, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(17, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	/* SW IP channels */
 	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 128, 5, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(47, "IP_SW0", 128, 5, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false ,false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(50, "IP_SW2", 128, 7, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(51, "IP_SW2", 128, 7, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 };
 
 struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
 	/* HW channels */
 	MHI_CHANNEL_CONFIG_UL(104, "IP_HW0", 2048, 8, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(105, "IP_HW0", 2048, 9, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, true,  false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(106, "IP_HW1", 2048, 10, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false, 0),
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(107, "IP_HW1", 2048, 11, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, true, false, false,
 			      false, false, 0, 0),
 };
 
