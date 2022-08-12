@@ -749,10 +749,15 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 
 			if (mhi_chan->dir == DMA_TO_DEVICE) {
 				atomic_dec(&mhi_cntrl->pending_pkts);
-				/* Release the reference got from mhi_queue() */
-				mhi_cntrl->runtime_put(mhi_cntrl);
+				/*
+				 * Incase of scatter gather send_cb is set to true only
+				 * for the last TRE, runtime_put should be called for
+				 * last TRE instead of every buffer i.e, when send_cb
+				 * is true else runtime_put count will not be balanced
+				 */
+				if (!buf_info->sg_enabled || send_cb)
+					mhi_cntrl->runtime_put(mhi_cntrl);
 			}
-
 			/*
 			 * Recycle the buffer if buffer is pre-allocated,
 			 * if there is an error, not much we can do apart
