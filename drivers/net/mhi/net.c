@@ -321,9 +321,15 @@ static int mhi_net_probe(struct mhi_device *mhi_dev,
 	struct device *dev = &mhi_dev->dev;
 	struct mhi_net_dev *mhi_netdev;
 	struct net_device *ndev;
+	char netname[IFNAMSIZ * 2] = {0};
 	int err;
 
-	ndev = alloc_netdev(sizeof(*mhi_netdev), info->netname,
+	if (snprintf(netname, sizeof(netname), "%s_%%d", dev_name(dev)) >= IFNAMSIZ) {
+		dev_err(dev, "Invalid interface name: '%s'\n", netname);
+		return -EINVAL;
+	}
+
+	ndev = alloc_netdev(sizeof(*mhi_netdev), netname,
 			    NET_NAME_PREDICTABLE, info->ethernet_if ?
 			    mhi_ethernet_setup : mhi_net_setup);
 	if (!ndev)
