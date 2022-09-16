@@ -668,3 +668,4 @@ module_init(mhi_uci_init);
 module_exit(mhi_uci_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MHI UCI Driver");
+MODULE_VERSION(MHI_MODULE_VERSION);

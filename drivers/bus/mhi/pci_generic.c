@@ -949,3 +949,4 @@ module_pci_driver(mhi_pci_driver);
 MODULE_AUTHOR("Loic Poulain <loic.poulain@linaro.org>");
 MODULE_DESCRIPTION("Modem Host Interface (MHI) PCI controller driver");
 MODULE_LICENSE("GPL");
+MODULE_VERSION(MHI_MODULE_VERSION);

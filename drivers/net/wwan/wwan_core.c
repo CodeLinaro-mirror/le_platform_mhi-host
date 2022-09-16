@@ -634,3 +634,4 @@ module_exit(wwan_exit);
 MODULE_AUTHOR("Loic Poulain <loic.poulain@linaro.org>");
 MODULE_DESCRIPTION("WWAN core");
 MODULE_LICENSE("GPL v2");
+MODULE_VERSION(MHI_MODULE_VERSION);

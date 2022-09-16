@@ -348,3 +348,4 @@ module_mhi_driver(mhi_wwan_ctrl_driver);
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MHI WWAN CTRL Driver");
 MODULE_AUTHOR("Loic Poulain <loic.poulain@linaro.org>");
+MODULE_VERSION(MHI_MODULE_VERSION);

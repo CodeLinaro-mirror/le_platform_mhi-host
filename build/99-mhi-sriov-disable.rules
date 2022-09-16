@@ -1,4 +1,4 @@
 #Disable num VFs for SRIOV after mission mode exit or driver/module remove
-ACTION=="change|remove",
-SUBSYSTEM=="mhi", ENV{EXEC_ENV}!="MISSION MODE",
+ACTION=="change|remove"
+SUBSYSTEM=="mhi", ENV{EXEC_ENV}!="MISSION MODE"
 SUBSYSTEM=="pci", ATTRS{device}=="0x600", ATTR{sriov_numvfs}="0"

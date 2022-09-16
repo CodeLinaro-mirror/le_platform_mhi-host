@@ -430,3 +430,4 @@ module_mhi_driver(mhi_net_driver);
 MODULE_AUTHOR("Loic Poulain <loic.poulain@linaro.org>");
 MODULE_DESCRIPTION("Network over MHI");
 MODULE_LICENSE("GPL v2");
+MODULE_VERSION(MHI_MODULE_VERSION);
