@@ -147,16 +147,23 @@ struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
 	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
-			      MHI_DB_BRST_DISABLE, false, 0, false ,false, false,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+};
+
+struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
+	/* SW IP channels */
+	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
 	MHI_CHANNEL_CONFIG_UL(50, "IP_SW2", 128, 7, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
 	MHI_CHANNEL_CONFIG_DL(51, "IP_SW2", 128, 7, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
-};
 
-struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
 	/* HW channels */
 	MHI_CHANNEL_CONFIG_UL(104, "IP_HW0", 2048, 8, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),

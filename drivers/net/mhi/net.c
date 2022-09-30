@@ -396,10 +396,15 @@ static void mhi_net_remove(struct mhi_device *mhi_dev)
 	free_netdev(mhi_netdev->ndev);
 }
 
-/* Make .ethernet_if as true to enable IF as ethernet */
 static const struct mhi_device_info mhi_swip0 = {
 	.netname = "mhi_swip%d",
 	.ethernet_if = false,
+};
+
+/* Make .ethernet_if as true to enable IF as ethernet */
+static const struct mhi_device_info mhi_swip1 = {
+	.netname = "mhi_swip%d",
+	.ethernet_if = true,
 };
 
 static const struct mhi_device_id mhi_net_id_table[] = {
@@ -407,8 +412,11 @@ static const struct mhi_device_id mhi_net_id_table[] = {
 	{ .chan = "IP_SW0", .driver_data = (kernel_ulong_t)&mhi_swip0 },
 	/* Software data PATH (to modem CPU) */
 	{ .chan = "IP_SW1", .driver_data = (kernel_ulong_t)&mhi_swip0 },
-	/* Software data PATH (to modem CPU) */
-	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip0 },
+	/** Software data PATH (to modem CPU)
+	 * IP_SW2 is used by netfconf mananger which
+	 * requires etheret packket header
+	 */
+	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip1 },
 	{}
 };
 MODULE_DEVICE_TABLE(mhi, mhi_net_id_table);
