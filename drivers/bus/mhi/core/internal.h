@@ -239,7 +239,8 @@ struct mhi_event_ctxt {
 #define CHAN_CTX_BRSTMODE_SHIFT 8
 #define CHAN_CTX_POLLCFG_MASK GENMASK(15, 10)
 #define CHAN_CTX_POLLCFG_SHIFT 10
-#define CHAN_CTX_RESERVED_MASK GENMASK(31, 16)
+#define CHAN_CTX_OVF_DISABLE 16
+#define CHAN_CTX_RESERVED_MASK GENMASK(31, 17)
 struct mhi_chan_ctxt {
 	__u32 chcfg;
 	__u32 chtype;
@@ -500,6 +501,7 @@ enum mhi_er_type {
 struct db_cfg {
 	bool reset_req;
 	bool db_mode;
+	bool ovf_dis;
 	u32 pollcfg;
 	enum mhi_db_brst_mode brstmode;
 	dma_addr_t db_val;
