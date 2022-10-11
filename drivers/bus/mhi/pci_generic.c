@@ -19,6 +19,7 @@
 #include <linux/workqueue.h>
 
 #define LASSEN_V1_DEVICE_ID 0x600
+#define LASSEN_V2_DEVICE_ID 0x601
 
 #define MHI_PCI_DEFAULT_BAR_NUM 0
 
@@ -30,6 +31,7 @@
 /**
  * struct mhi_pci_dev_info - MHI PCI device specific information
  * @config: MHI controller configuration
+ * @vf_config: MHI controller configuration for VF (optional)
  * @name: name of the PCI module
  * @fw: firmware path (if any)
  * @edl: emergency download mode firmware path (if any)
@@ -41,6 +43,7 @@
  */
 struct mhi_pci_dev_info {
 	const struct mhi_controller_config *config;
+	const struct mhi_controller_config *vf_config;
 	const char *name;
 	const char *fw;
 	const char *edl;
@@ -248,12 +251,15 @@ static struct mhi_pci_dev_info mhi_qcom_lassen_info = {
 	.fw = "qcom/lassen/xbl_s.melf",
 	.edl = "qcom/lassen/edl.mbn",
 	.config = &modem_qcom_v1_mhi_lsn_pf_config,
+	.vf_config = &modem_qcom_v1_mhi_lsn_vf_config,
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
 	.sideband_wake = false,
 };
 
 static const struct pci_device_id mhi_pci_id_table[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, LASSEN_V1_DEVICE_ID),
+		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_info },
+	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, LASSEN_V2_DEVICE_ID),
 		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_info },
 	{  }
 };
@@ -552,8 +558,9 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	INIT_WORK(&mhi_pdev->recovery_work, mhi_pci_recovery_work);
 
-	if (id->device == LASSEN_V1_DEVICE_ID && pdev->is_virtfn) {
-		mhi_cntrl_config = &modem_qcom_v1_mhi_lsn_vf_config;
+	/* Assign mhi_cntrl_config based on PF/VF */
+	if (pdev->is_virtfn) {
+		mhi_cntrl_config = info->vf_config;
 	} else {
 		mhi_cntrl_config = info->config;
 		timer_setup(&mhi_pdev->health_check_timer, health_check, 0);
@@ -639,9 +646,8 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	set_bit(MHI_PCI_DEV_STARTED, &mhi_pdev->status);
 
-	/* start health check */
-	if ((pdev->is_physfn && id->device == LASSEN_V1_DEVICE_ID) ||
-	    id->device != LASSEN_V1_DEVICE_ID)
+	/* start health check only to PF and not for VF's */
+	if (mhi_pdev->health_check_timer.function)
 		mod_timer(&mhi_pdev->health_check_timer,
 			  jiffies + HEALTH_CHECK_PERIOD);
 
