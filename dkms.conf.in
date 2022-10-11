@@ -35,3 +35,4 @@ STRIP[5]=no
 
 AUTOINSTALL=yes
 NO_WEAK_MODULES=yes
+POST_BUILD="mhi-host/module-symvers-save $dkms_tree"
