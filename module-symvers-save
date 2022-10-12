@@ -1,8 +1,0 @@
-#!/bin/sh
-
-dkms_tree=$1
-SRC_DIR=$dkms_tree/$module/$module_version/build/
-DST_DIR=$dkms_tree/$module/$module_version/$kernelver/$arch/module/
-
-cp -f ${SRC_DIR}/Module.symvers ${DST_DIR} > /dev/null
-cat ${SRC_DIR}/Module.symvers >> /lib/modules/`uname -r`/build/Module.symvers
