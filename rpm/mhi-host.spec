@@ -13,18 +13,13 @@ Version:           %{version}
 License:           %license
 Release:           1dkms
 BuildArch:         x86_64
-Requires(post):    dkms >= 1.95
+Requires(post):    dkms >= 3.0.6
 BuildRoot:         %{_tmppath}/%{name}-%{version}-%{release}-root/
 
 %description
 Kernel modules for %{package_name} %{version} in a DKMS wrapper.
 
 %prep
-if [ "%mktarball_line" != "none" ]; then
-        echo -e "\n In the %prep step...\n"
-        /usr/sbin/dkms mktarball -m %package_name -v %version %mktarball_line --archive `basename %{package_name}-%{version}.dkms.tar.gz`
-        cp -af %{_dkmsdir}/%{package_name}/%{version}/tarball/`basename %{package_name}-%{version}.dkms.tar.gz` %{package_name}-%{version}.dkms.tar.gz
-fi
 
 %install
 echo -e "\n About to start INSTALL step.. \n"
@@ -54,13 +49,10 @@ mkdir -p %{buildroot}%{_sysconfdir}/udev/rules.d
 install -m 644 %{_sourcedir}/%{package_name}-%{version}/mhi-host/build/*.rules %{buildroot}%{_sysconfdir}/udev/rules.d
 
 mkdir -p %{buildroot}%{_sysconfdir}/modules-load.d
-install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/csm-platform.conf %{buildroot}%{_sysconfdir}/modules-load.d/csm-platform.conf
+install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/mhi-host.conf %{buildroot}%{_sysconfdir}/modules-load.d/mhi-host.conf
 
 mkdir -p %{buildroot}%{_sysconfdir}/modprobe.d
-install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/csm-platform-blacklist.conf %{buildroot}%{_sysconfdir}/modprobe.d/csm-platform-blacklist.conf
-
-mkdir -p %{buildroot}%{_includedir}/linux
-install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/include/linux/local_mhi.h %{buildroot}%{_includedir}/linux/local_mhi.h
+install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/mhi-host-blacklist.conf %{buildroot}%{_sysconfdir}/modprobe.d/mhi-host-blacklist.conf
 
 %clean
 if [ "$RPM_BUILD_ROOT" != "/" ]; then
@@ -86,6 +78,7 @@ exit 1
 echo -e
 echo -e "Uninstall of %{package_name} module (version %{version}) beginning:"
 dkms remove -m %{package_name} -v %{version} --all --rpm_safe_upgrade
+rm -rf /lib/modules/`uname -r`/build/mhi-syms
 exit 0
 
 %files
@@ -95,9 +88,8 @@ exit 0
 %config %{_sysconfdir}/udev/rules.d/99-mhi-permissions.rules
 %config %{_sysconfdir}/udev/rules.d/99-mhi-sriov-disable.rules
 %config %{_sysconfdir}/udev/rules.d/99-mhi-sriov-enable.rules
-%config %{_sysconfdir}/modules-load.d/csm-platform.conf
-%config %{_sysconfdir}/modprobe.d/csm-platform-blacklist.conf
-%{_includedir}/linux/local_mhi.h
+%config %{_sysconfdir}/modules-load.d/mhi-host.conf
+%config %{_sysconfdir}/modprobe.d/mhi-host-blacklist.conf
 
 %changelog
 * %(date "+%a %b %d %Y") %packager %{version}-%{release}
