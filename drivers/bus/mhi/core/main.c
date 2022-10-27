@@ -754,7 +754,9 @@ static int parse_xfer_event(struct mhi_controller *mhi_cntrl,
 				 * Incase of scatter gather send_cb is set to true only
 				 * for the last TRE, runtime_put should be called for
 				 * last TRE instead of every buffer i.e, when send_cb
-				 * is true else runtime_put count will not be balanced
+				 * is true else runtime_put count will not be
+				 * balanced, if it's not a scatter gather transfer, then
+				 * runtime_put will be called for every packet.
 				 */
 				if (!buf_info->sg_enabled || send_cb)
 					mhi_cntrl->runtime_put(mhi_cntrl);
@@ -1393,7 +1395,7 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 {
 	struct mhi_ring *buf_ring, *tre_ring;
 	struct mhi_tre *mhi_tre;
-	struct mhi_buf_info *buf_info;
+	struct mhi_buf_info *buf_info = NULL;
 	void *cur_buf_ring_wp, *cur_tre_ring_wp;
 	int eot, eob, chain, bei, mirror;
 	int i = 0, j, ret;
@@ -1458,7 +1460,26 @@ int mhi_gen_n_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 		mhi_add_ring_element(mhi_cntrl, tre_ring);
 		mhi_add_ring_element(mhi_cntrl, buf_ring);
 		i++;
+
+		/**
+		 * When multiple packets are queued in single queue_n_dma call
+		 * runtime_get should be called for each packet to balance
+		 * runtime_put and runtime_get count,
+		 * because once we get MSI's from the device,
+		 * we call runtime_put for each packet in parse_xfer_event
+		 */
+		if(!buf_info->sg_enabled)
+			mhi_cntrl->runtime_get(mhi_cntrl);
 	}
+
+	/**
+	 * If it is a scatter gather transfer, runtime_get
+	 * should be called only once as we call runtime_put
+	 * only for last TRE in the parse_xfer_event
+	 */
+	if (buf_info && buf_info->sg_enabled)
+		mhi_cntrl->runtime_get(mhi_cntrl);
+
 	return 0;
 
 error:
@@ -1510,12 +1531,6 @@ int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 			    num);
 	if (ret)
 		goto error;
-
-	/* Packet is queued, take a usage ref to exit M3 if necessary
-	 * for host->device buffer, balanced put is done on buffer completion
-	 * for device->host buffer, balanced put is after ringing the DB
-	 */
-	mhi_cntrl->runtime_get(mhi_cntrl);
 
 	/* Assert dev_wake (to exit/prevent M1/M2)*/
 	mhi_cntrl->wake_toggle(mhi_cntrl);
