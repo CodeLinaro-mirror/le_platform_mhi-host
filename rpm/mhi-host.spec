@@ -51,9 +51,6 @@ install -m 644 %{_sourcedir}/%{package_name}-%{version}/mhi-host/build/*.rules %
 mkdir -p %{buildroot}%{_sysconfdir}/modules-load.d
 install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/mhi-host.conf %{buildroot}%{_sysconfdir}/modules-load.d/mhi-host.conf
 
-mkdir -p %{buildroot}%{_sysconfdir}/modprobe.d
-install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/mhi-host-blacklist.conf %{buildroot}%{_sysconfdir}/modprobe.d/mhi-host-blacklist.conf
-
 %clean
 if [ "$RPM_BUILD_ROOT" != "/" ]; then
         rm -rf $RPM_BUILD_ROOT
@@ -89,7 +86,6 @@ exit 0
 %config %{_sysconfdir}/udev/rules.d/99-mhi-sriov-disable.rules
 %config %{_sysconfdir}/udev/rules.d/99-mhi-sriov-enable.rules
 %config %{_sysconfdir}/modules-load.d/mhi-host.conf
-%config %{_sysconfdir}/modprobe.d/mhi-host-blacklist.conf
 
 %changelog
 * %(date "+%a %b %d %Y") %packager %{version}-%{release}
