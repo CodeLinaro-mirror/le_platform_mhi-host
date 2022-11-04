@@ -531,8 +531,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	const struct mhi_pci_dev_info *info = (struct mhi_pci_dev_info *) id->driver_data;
 	const struct mhi_controller_config *mhi_cntrl_config;
-	struct mhi_pci_device *mhi_pdev;
-	struct mhi_controller *mhi_cntrl;
+	struct mhi_pci_device *mhi_pdev, *pf_mhi_pdev;
+	struct mhi_controller *mhi_cntrl, *pf_mhi_cntrl;
+        struct pci_dev *pf_pdev;
+	struct mhi_device *mhi_dev;
 	int err;
 
 	dev_dbg(&pdev->dev, "MHI PCI device found: %s\n", info->name);
@@ -593,13 +595,65 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	pci_enable_pcie_error_reporting(pdev);
 
+	mhi_cntrl->is_virtfn = pdev->is_virtfn;
+
 	err = mhi_register_controller(mhi_cntrl, mhi_cntrl_config);
 	if (err)
 		goto err_disable_reporting;
 
+
+	/* If VF extract mhi_pdev of parent */
+	if (pdev->is_virtfn) {
+		mhi_dev = mhi_cntrl->mhi_dev;
+		/* Extract Parent mhi_cntrl structure */
+		pf_pdev = pdev->physfn;
+		pf_mhi_pdev = pci_get_drvdata(pf_pdev);
+
+
+		pf_mhi_cntrl = &pf_mhi_pdev->mhi_cntrl;
+
+		dev_err(&pdev->dev, "MHI 0x%llu\n",
+				 (u64)pf_pdev);
+		mhi_cntrl->index = pf_mhi_cntrl->index;
+		/* Allocate mhi controller instance for each SRIOV */
+		mhi_cntrl->vf_index = ida_alloc(&pf_mhi_cntrl->vf_index_init,
+							 GFP_KERNEL);
+		if (mhi_cntrl->vf_index < 0) {
+			destroy_workqueue(mhi_cntrl->hiprio_wq);
+			kfree(mhi_cntrl->mhi_cmd);
+			kfree(mhi_cntrl->mhi_event);
+			vfree(mhi_cntrl->mhi_chan);
+			goto err_disable_reporting;
+		}
+
+
+		dev_err(&pdev->dev, "MHI dev name mhi%d_%d\n", mhi_cntrl->index,
+			mhi_cntrl->vf_index);
+		/* set device name for VF */
+		dev_set_name(&mhi_dev->dev, "mhi%d_%d", mhi_cntrl->index,
+					mhi_cntrl->vf_index);
+
+		mhi_dev->name = dev_name(&mhi_dev->dev);
+
+		/* Init wakeup source */
+		device_init_wakeup(&mhi_dev->dev, true);
+
+		err = device_add(&mhi_dev->dev);
+		if (err) {
+			goto err_vf_unregister;
+		}
+
+		mhi_create_debugfs(mhi_cntrl);
+
+        } else {
+		ida_init(&mhi_cntrl->vf_index_init);
+		mhi_cntrl->vf_index = -1;
+
+	}
+
 	err = mhi_controller_setup_timesync(mhi_cntrl, &mhi_local_time_get);
 	if (err)
-		goto err_disable_reporting;
+		goto err_vf_unregister;
 
 	/* call backs to pass pci bus number and VF num if SR-IOV is enabled */
 	mhi_cntrl->get_device_instance_id = mhi_pci_get_vf_num;
@@ -641,6 +695,15 @@ err_unprepare:
 	mhi_unprepare_after_power_down(mhi_cntrl);
 err_unregister:
 	mhi_unregister_controller(mhi_cntrl);
+err_vf_unregister:
+	if(pdev->is_virtfn) {
+		put_device(&mhi_dev->dev);
+		ida_free(&pf_mhi_cntrl->vf_index_init, mhi_cntrl->vf_index);
+		destroy_workqueue(mhi_cntrl->hiprio_wq);
+		kfree(mhi_cntrl->mhi_cmd);
+		kfree(mhi_cntrl->mhi_event);
+		vfree(mhi_cntrl->mhi_chan);
+	}
 err_disable_reporting:
 	pci_disable_pcie_error_reporting(pdev);
 
@@ -651,6 +714,9 @@ static void mhi_pci_remove(struct pci_dev *pdev)
 {
 	struct mhi_pci_device *mhi_pdev = pci_get_drvdata(pdev);
 	struct mhi_controller *mhi_cntrl = &mhi_pdev->mhi_cntrl;
+	struct mhi_pci_device *pf_mhi_pdev;
+	struct mhi_controller *pf_mhi_cntrl;
+	struct pci_dev *pf_dev;
 
 	del_timer_sync(&mhi_pdev->health_check_timer);
 	cancel_work_sync(&mhi_pdev->recovery_work);
@@ -665,6 +731,21 @@ static void mhi_pci_remove(struct pci_dev *pdev)
 		pm_runtime_get_noresume(&pdev->dev);
 
 	mhi_unregister_controller(mhi_cntrl);
+
+	/* unregister for VF's and remove index */
+	if (mhi_cntrl->is_virtfn) {
+		struct mhi_device *mhi_dev = mhi_cntrl->mhi_dev;
+		pf_dev = pdev->physfn;
+		pf_mhi_pdev = pci_get_drvdata(pf_dev);
+
+		pf_mhi_cntrl = &pf_mhi_pdev->mhi_cntrl;
+
+		device_del(&mhi_dev->dev);
+		put_device(&mhi_dev->dev);
+
+		ida_free(&pf_mhi_cntrl->vf_index_init, mhi_cntrl->vf_index);
+
+	}
 	pci_disable_pcie_error_reporting(pdev);
 }
 

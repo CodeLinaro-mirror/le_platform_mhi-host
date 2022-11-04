@@ -513,6 +513,7 @@ void mhi_create_debugfs(struct mhi_controller *mhi_cntrl)
 	debugfs_create_file("timeout_ms", 0644, mhi_cntrl->debugfs_dentry,
 			    mhi_cntrl, &debugfs_timeout_ms_fops);
 }
+EXPORT_SYMBOL(mhi_create_debugfs);
 
 void mhi_destroy_debugfs(struct mhi_controller *mhi_cntrl)
 {

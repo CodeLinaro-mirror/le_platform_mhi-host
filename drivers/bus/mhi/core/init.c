@@ -1133,12 +1133,6 @@ int mhi_register_controller(struct mhi_controller *mhi_cntrl,
 	mhi_cntrl->minor_version = (soc_info & SOC_HW_VERSION_MINOR_VER_BMSK) >>
 					SOC_HW_VERSION_MINOR_VER_SHFT;
 
-	mhi_cntrl->index = ida_alloc(&mhi_controller_ida, GFP_KERNEL);
-	if (mhi_cntrl->index < 0) {
-		ret = mhi_cntrl->index;
-		goto err_destroy_wq;
-	}
-
 	/* Register controller with MHI bus */
 	mhi_dev = mhi_alloc_device(mhi_cntrl);
 	if (IS_ERR(mhi_dev)) {
@@ -1149,28 +1143,38 @@ int mhi_register_controller(struct mhi_controller *mhi_cntrl,
 
 	mhi_dev->dev_type = MHI_DEVICE_CONTROLLER;
 	mhi_dev->mhi_cntrl = mhi_cntrl;
-	dev_set_name(&mhi_dev->dev, "mhi%d", mhi_cntrl->index);
-	mhi_dev->name = dev_name(&mhi_dev->dev);
-
-	/* Init wakeup source */
-	device_init_wakeup(&mhi_dev->dev, true);
-
-	ret = device_add(&mhi_dev->dev);
-	if (ret)
-		goto err_release_dev;
-
 	mhi_cntrl->mhi_dev = mhi_dev;
 
-	mhi_create_debugfs(mhi_cntrl);
+	/* create device only for PF, allocate VF in contoller driver */
+	if (!mhi_cntrl->is_virtfn){
 
+		mhi_cntrl->index = ida_alloc(&mhi_controller_ida, GFP_KERNEL);
+		if (mhi_cntrl->index < 0) {
+			ret = mhi_cntrl->index;
+			goto err_destroy_wq;
+		}
+
+		dev_set_name(&mhi_dev->dev, "mhi%d", mhi_cntrl->index);
+		mhi_dev->name = dev_name(&mhi_dev->dev);
+
+		/* Init wakeup source */
+		device_init_wakeup(&mhi_dev->dev, true);
+
+		ret = device_add(&mhi_dev->dev);
+		if (ret)
+			goto err_release_dev;
+
+
+		mhi_create_debugfs(mhi_cntrl);
+	}
 	return 0;
 
 err_release_dev:
 	put_device(&mhi_dev->dev);
-err_ida_free:
-	ida_free(&mhi_controller_ida, mhi_cntrl->index);
 err_destroy_wq:
 	destroy_workqueue(mhi_cntrl->hiprio_wq);
+err_ida_free:
+	ida_free(&mhi_controller_ida, mhi_cntrl->index);
 err_free_cmd:
 	kfree(mhi_cntrl->mhi_cmd);
 err_free_event:
@@ -1202,10 +1206,12 @@ void mhi_unregister_controller(struct mhi_controller *mhi_cntrl)
 	}
 	vfree(mhi_cntrl->mhi_chan);
 
-	device_del(&mhi_dev->dev);
-	put_device(&mhi_dev->dev);
-
-	ida_free(&mhi_controller_ida, mhi_cntrl->index);
+	/* unregister for only PF, controller will unregister for VF's */
+	if (!mhi_cntrl->is_virtfn){
+		device_del(&mhi_dev->dev);
+		put_device(&mhi_dev->dev);
+		ida_free(&mhi_controller_ida, mhi_cntrl->index);
+	}
 }
 EXPORT_SYMBOL_GPL(mhi_unregister_controller);
 
