@@ -511,7 +511,6 @@ static void health_check(struct timer_list *t)
 static int mhi_pci_get_vf_num(struct mhi_controller *mhi_cntrl)
 {
 	struct pci_dev *pdev = to_pci_dev(mhi_cntrl->cntrl_dev);
-
 	if (pdev->is_virtfn)
 		return PCI_FUNC(pdev->devfn);
 
@@ -520,9 +519,7 @@ static int mhi_pci_get_vf_num(struct mhi_controller *mhi_cntrl)
 
 static int mhi_pci_get_bus_num(struct mhi_controller *mhi_cntrl)
 {
-	struct pci_dev *pdev = to_pci_dev(mhi_cntrl->cntrl_dev);
-
-	return pci_domain_nr(pdev->bus);
+	return mhi_cntrl->index;
 }
 
 static ktime_t mhi_local_time_get(void)
