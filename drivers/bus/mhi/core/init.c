@@ -1041,6 +1041,7 @@ int mhi_register_controller(struct mhi_controller *mhi_cntrl,
 	struct mhi_chan *mhi_chan;
 	struct mhi_cmd *mhi_cmd;
 	struct mhi_device *mhi_dev;
+	struct mhi_controller *pf_mhi_cntrl;
 	u32 soc_info;
 	int ret, i;
 
@@ -1133,31 +1134,72 @@ int mhi_register_controller(struct mhi_controller *mhi_cntrl,
 	mhi_cntrl->minor_version = (soc_info & SOC_HW_VERSION_MINOR_VER_BMSK) >>
 					SOC_HW_VERSION_MINOR_VER_SHFT;
 
-	mhi_cntrl->index = ida_alloc(&mhi_controller_ida, GFP_KERNEL);
-	if (mhi_cntrl->index < 0) {
-		ret = mhi_cntrl->index;
-		goto err_destroy_wq;
-	}
-
 	/* Register controller with MHI bus */
 	mhi_dev = mhi_alloc_device(mhi_cntrl);
 	if (IS_ERR(mhi_dev)) {
 		dev_err(mhi_cntrl->cntrl_dev, "Failed to allocate MHI device\n");
 		ret = PTR_ERR(mhi_dev);
-		goto err_ida_free;
+		goto err_destroy_wq;
+	}
+
+	/**
+	 * Allocate ID's for VF and PF instance saperatly.
+	 * If mhi_cntrl is of VF, allocated VF instance ID under the
+	 * respective PF, so that we can segregate mhi_cntrl for each physical
+	 * device and mhi channel names can be created accordingly.
+	 * Example:
+	 * Each PF device name will be mhi<PF_instance>
+	 * Each VF device name will be mhi<PF_instance>_<VF_instance>
+	 */
+	if (mhi_cntrl->is_virtfn) {
+		/* Each VF mhi_cntrl requires PF mhi_cntrl */
+		if (!mhi_cntrl->pf_mhi_cntrl) {
+			dev_err(mhi_cntrl->cntrl_dev,
+					"No parent device for VF\n");
+			ret = -ENODEV;
+			goto err_release_dev;
+		}
+
+		pf_mhi_cntrl = mhi_cntrl->pf_mhi_cntrl;
+
+		/* assign index as PF */
+		mhi_cntrl->index = pf_mhi_cntrl->index;
+
+		/* get vf index */
+		mhi_cntrl->vf_index = mhi_cntrl->get_device_instance_id(mhi_cntrl);
+		if (mhi_cntrl->vf_index <= 0) {
+			ret = mhi_cntrl->vf_index;
+			dev_err(mhi_cntrl->cntrl_dev," NO VF found error:%d\n", ret);
+			goto err_release_dev;
+		}
+
+		dev_set_name(&mhi_dev->dev, "mhi%d_%d", mhi_cntrl->index, mhi_cntrl->vf_index);
+
+	} else {
+
+		mhi_cntrl->index = ida_alloc(&mhi_controller_ida, GFP_KERNEL);
+		if (mhi_cntrl->index < 0) {
+			ret = mhi_cntrl->index;
+			goto err_release_dev;
+		}
+		dev_set_name(&mhi_dev->dev, "mhi%d", mhi_cntrl->index);
+
 	}
 
 	mhi_dev->dev_type = MHI_DEVICE_CONTROLLER;
 	mhi_dev->mhi_cntrl = mhi_cntrl;
-	dev_set_name(&mhi_dev->dev, "mhi%d", mhi_cntrl->index);
 	mhi_dev->name = dev_name(&mhi_dev->dev);
 
 	/* Init wakeup source */
 	device_init_wakeup(&mhi_dev->dev, true);
 
 	ret = device_add(&mhi_dev->dev);
-	if (ret)
+	if (ret) {
+		/* free IDA allocation and cleanup resources */
+		if (!mhi_cntrl->is_virtfn)
+			ida_free(&mhi_controller_ida, mhi_cntrl->index);
 		goto err_release_dev;
+	}
 
 	mhi_cntrl->mhi_dev = mhi_dev;
 
@@ -1167,8 +1209,6 @@ int mhi_register_controller(struct mhi_controller *mhi_cntrl,
 
 err_release_dev:
 	put_device(&mhi_dev->dev);
-err_ida_free:
-	ida_free(&mhi_controller_ida, mhi_cntrl->index);
 err_destroy_wq:
 	destroy_workqueue(mhi_cntrl->hiprio_wq);
 err_free_cmd:
@@ -1205,7 +1245,9 @@ void mhi_unregister_controller(struct mhi_controller *mhi_cntrl)
 	device_del(&mhi_dev->dev);
 	put_device(&mhi_dev->dev);
 
-	ida_free(&mhi_controller_ida, mhi_cntrl->index);
+	/* Free ID's PF device */
+	if (!mhi_cntrl->is_virtfn)
+		ida_free(&mhi_controller_ida, mhi_cntrl->index);
 }
 EXPORT_SYMBOL_GPL(mhi_unregister_controller);
 

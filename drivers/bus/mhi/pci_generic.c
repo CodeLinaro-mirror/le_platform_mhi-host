@@ -531,8 +531,9 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	const struct mhi_pci_dev_info *info = (struct mhi_pci_dev_info *) id->driver_data;
 	const struct mhi_controller_config *mhi_cntrl_config;
-	struct mhi_pci_device *mhi_pdev;
-	struct mhi_controller *mhi_cntrl;
+	struct mhi_pci_device *mhi_pdev, *pf_mhi_pdev = NULL;
+	struct mhi_controller *mhi_cntrl, *pf_mhi_cntrl = NULL;
+	struct pci_dev *pf_pdev = NULL;
 	int err;
 
 	dev_dbg(&pdev->dev, "MHI PCI device found: %s\n", info->name);
@@ -593,6 +594,21 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	pci_enable_pcie_error_reporting(pdev);
 
+	/* call backs to pass pci bus number and VF num if SR-IOV is enabled */
+	mhi_cntrl->get_device_instance_id = mhi_pci_get_vf_num;
+	mhi_cntrl->get_device_bus_number = mhi_pci_get_bus_num;
+
+	mhi_cntrl->is_virtfn = pdev->is_virtfn;
+
+	/* Assign parent/PF mhi_cntrl to VF mhi_cntrl*/
+	if (pdev->is_virtfn) {
+		pf_pdev = pdev->physfn;
+		pf_mhi_pdev = pci_get_drvdata(pf_pdev);
+		pf_mhi_cntrl = &pf_mhi_pdev->mhi_cntrl;
+
+		mhi_cntrl->pf_mhi_cntrl = pf_mhi_cntrl;
+	}
+
 	err = mhi_register_controller(mhi_cntrl, mhi_cntrl_config);
 	if (err)
 		goto err_disable_reporting;
@@ -600,10 +616,6 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	err = mhi_controller_setup_timesync(mhi_cntrl, &mhi_local_time_get);
 	if (err)
 		goto err_disable_reporting;
-
-	/* call backs to pass pci bus number and VF num if SR-IOV is enabled */
-	mhi_cntrl->get_device_instance_id = mhi_pci_get_vf_num;
-	mhi_cntrl->get_device_bus_number = mhi_pci_get_bus_num;
 
 	/* MHI bus does not power up the controller by default */
 	err = mhi_prepare_for_power_up(mhi_cntrl);
