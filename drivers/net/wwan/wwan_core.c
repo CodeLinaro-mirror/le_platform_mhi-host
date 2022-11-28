@@ -488,7 +488,11 @@ static int wwan_port_fops_open(struct inode *inode, struct file *file)
 		return PTR_ERR(port);
 
 	file->private_data = port;
-	simple_open(inode, file);
+	#if (LINUX_VERSION_CODE > KERNEL_VERSION(5,1,0))
+		stream_open(inode, file);
+	#else
+		file->f_mode &= ~(FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE | FMODE_ATOMIC_POS);
+	#endif
 
 	err = wwan_port_op_start(port);
 	if (err)
