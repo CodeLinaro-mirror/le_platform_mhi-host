@@ -324,7 +324,7 @@ static int mhi_net_probe(struct mhi_device *mhi_dev,
 	char netname[IFNAMSIZ * 2] = {0};
 	int err;
 
-	if (snprintf(netname, sizeof(netname), "%s_%%d", dev_name(dev)) >= IFNAMSIZ) {
+	if (snprintf(netname, sizeof(netname), "%s", dev_name(dev)) >= IFNAMSIZ) {
 		dev_err(dev, "Invalid interface name: '%s'\n", netname);
 		return -EINVAL;
 	}
