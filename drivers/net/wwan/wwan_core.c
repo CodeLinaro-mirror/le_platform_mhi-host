@@ -14,6 +14,7 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/wwan.h>
+#include <linux/version.h>
 
 #define WWAN_MAX_MINORS 256 /* 256 minors allowed with register_chrdev() */
 
