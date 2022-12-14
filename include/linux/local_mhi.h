@@ -397,6 +397,9 @@ struct mhi_timesync {
  * @edl_download: MHI host can proceed with BHI download in EDL mode (optional)
  * @wake_set: Device wakeup set flag
  * @irq_flags: irq flags passed to request_irq (optional)
+ * @pf_mhi_cntrl: stores corresponding parent PF
+ * @is_virtfn: State controller is VF
+ * @vf_index: allocates index for SRIOV is enabled
  *
  * Fields marked as (required) need to be populated by the controller driver
  * before calling mhi_register_controller(). For the fields marked as (optional)
@@ -492,15 +495,17 @@ struct mhi_controller {
 	/* get bus number of the mhi controller */
 	int (*get_device_bus_number)(struct mhi_controller *mhi_cntrl);
 
-	unsigned int is_virtfn;
-	/* init SRIOV mhi_cntrl index init */
-	struct ida vf_index_init;
-	/* mhi controller inder fro SRIOV*/
-	int vf_index;
-
 	size_t buffer_len;
 	size_t max_tre_len;
 	int index;
+
+	/* mhi_cntrl of corresponding parent PF*/
+	struct mhi_controller *pf_mhi_cntrl;
+	bool is_virtfn;
+
+	/* allocate IDA for SRIOV*/
+	int vf_index;
+
 	bool bounce_buf;
 	bool fbc_download;
 	bool edl_download;
@@ -934,7 +939,5 @@ int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
 			     ktime_t *t_host,
 			     u64 *t_dev);
-
-void mhi_create_debugfs(struct mhi_controller *mhi_cntrl);
 
 #endif /* _MHI_H_ */
