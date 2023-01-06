@@ -135,6 +135,8 @@ static void mhi_ethernet_setup(struct net_device *ndev)
 {
 	ndev->netdev_ops = &mhi_netdev_ops;
 	ether_setup(ndev);
+	ndev->min_mtu = ETH_MIN_MTU;
+	ndev->max_mtu = ETH_MAX_MTU;
 }
 
 static struct sk_buff *mhi_net_skb_agg(struct mhi_net_dev *mhi_netdev,
