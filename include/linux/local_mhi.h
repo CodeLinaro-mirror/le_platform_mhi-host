@@ -400,6 +400,9 @@ struct mhi_timesync {
  * @pf_mhi_cntrl: stores corresponding parent PF
  * @is_virtfn: State controller is VF
  * @vf_index: allocates index for SRIOV is enabled
+ * @verbose_list: list of channels ring elements to be dumped from debugfs
+ * @debug_chans: dumps channel ring elements from debugfs directory
+ * @debug_events: dumps event ring elements form debugfs directory
  *
  * Fields marked as (required) need to be populated by the controller driver
  * before calling mhi_register_controller(). For the fields marked as (optional)
@@ -505,6 +508,11 @@ struct mhi_controller {
 
 	/* allocate IDA for SRIOV*/
 	int vf_index;
+
+	/* verbose option to dump channel/event ring elements from debugfs */
+	struct list_head verbose_list;
+	u32 *debug_chans;
+	u32 *debug_events;
 
 	bool bounce_buf;
 	bool fbc_download;

@@ -12,12 +12,10 @@
 #include <linux/module.h>
 #include "internal.h"
 
-static struct list_head verbose_list;
 struct debug_device {
 	struct list_head node;
 	struct mhi_device *mhi_dev;
 };
-u32 *debug_chans, *debug_events;
 
 static int mhi_debugfs_states_show(struct seq_file *m, void *d)
 {
@@ -83,7 +81,7 @@ static int mhi_debugfs_events_show(struct seq_file *m, void *d)
 		seq_printf(m, " local rp: 0x%pK db: 0x%pad\n", ring->rp,
 			   &mhi_event->db_cfg.db_val);
 
-		if (!debug_events[i])
+		if (!mhi_cntrl->debug_events[i])
 			continue;
 
 		if (!ring->base)
@@ -149,7 +147,7 @@ static int mhi_debugfs_channels_show(struct seq_file *m, void *d)
 			   ring->rp, ring->wp,
 			   &mhi_chan->db_cfg.db_val);
 
-		if (!debug_chans[i])
+		if (!mhi_cntrl->debug_chans[i])
 			continue;
 
 		if (!ring->base)
@@ -205,9 +203,9 @@ static int mhi_debugfs_devices_show(struct seq_file *m, void *d)
 	device_for_each_child(&mhi_cntrl->mhi_dev->dev, m,
 			      mhi_device_info_show);
 
-	if (!list_empty(&verbose_list)) {
+	if (!list_empty(&mhi_cntrl->verbose_list)) {
 		seq_puts(m, "Verbose debugging enabled for:\n");
-		list_for_each_entry_safe(itr, tmp, &verbose_list, node)
+		list_for_each_entry_safe(itr, tmp, &mhi_cntrl->verbose_list, node)
 			seq_printf(m, "%s\n", itr->mhi_dev->name);
 	}
 
@@ -243,17 +241,20 @@ static ssize_t mhi_debugfs_devices_write(struct file *file,
 			continue;
 
 		if (!strncmp("remove", buf, 6)) {
-			list_for_each_entry_safe(itr, tmp, &verbose_list, node) {
+			if (list_empty(&mhi_cntrl->verbose_list))
+				continue;
+
+			list_for_each_entry_safe(itr, tmp, &mhi_cntrl->verbose_list, node) {
 				if (mhi_chan->mhi_dev != itr->mhi_dev)
 					continue;
 				list_del(&itr->node);
 				if (itr->mhi_dev->ul_chan) {
-					debug_chans[itr->mhi_dev->ul_chan_id] = 0;
-					debug_events[itr->mhi_dev->ul_event_id] = 0;
+					mhi_cntrl->debug_chans[itr->mhi_dev->ul_chan_id] = 0;
+					mhi_cntrl->debug_events[itr->mhi_dev->ul_event_id] = 0;
 				}
 				if (itr->mhi_dev->dl_chan) {
-					debug_chans[itr->mhi_dev->dl_chan_id] = 0;
-					debug_events[itr->mhi_dev->dl_event_id] = 0;
+					mhi_cntrl->debug_chans[itr->mhi_dev->dl_chan_id] = 0;
+					mhi_cntrl->debug_events[itr->mhi_dev->dl_event_id] = 0;
 				}
 				kfree(itr);
 			}
@@ -262,14 +263,14 @@ static ssize_t mhi_debugfs_devices_write(struct file *file,
 			mhi_debug_dev = kzalloc(sizeof(struct debug_device),
 						GFP_KERNEL);
 			mhi_debug_dev->mhi_dev = mhi_chan->mhi_dev;
-			list_add_tail(&mhi_debug_dev->node, &verbose_list);
+			list_add_tail(&mhi_debug_dev->node, &mhi_cntrl->verbose_list);
 			if (mhi_chan->mhi_dev->ul_chan) {
-				debug_chans[mhi_chan->mhi_dev->ul_chan_id] = 1;
-				debug_events[mhi_chan->mhi_dev->ul_event_id] = 1;
+				mhi_cntrl->debug_chans[mhi_chan->mhi_dev->ul_chan_id] = 1;
+				mhi_cntrl->debug_events[mhi_chan->mhi_dev->ul_event_id] = 1;
 			}
 			if (mhi_chan->mhi_dev->dl_chan) {
-				debug_chans[mhi_chan->mhi_dev->dl_chan_id] = 1;
-				debug_events[mhi_chan->mhi_dev->dl_event_id] = 1;
+				mhi_cntrl->debug_chans[mhi_chan->mhi_dev->dl_chan_id] = 1;
+				mhi_cntrl->debug_events[mhi_chan->mhi_dev->dl_event_id] = 1;
 			}
 			break;
 		}
@@ -489,10 +490,10 @@ static struct dentry *mhi_debugfs_root;
 
 void mhi_create_debugfs(struct mhi_controller *mhi_cntrl)
 {
-	INIT_LIST_HEAD(&verbose_list);
-	debug_chans = (u32 *) kzalloc(sizeof(u32) * mhi_cntrl->max_chan,
+	INIT_LIST_HEAD(&mhi_cntrl->verbose_list);
+	mhi_cntrl->debug_chans = (u32 *) kzalloc(sizeof(u32) * mhi_cntrl->max_chan,
 				      GFP_KERNEL);
-	debug_events = (u32 *) kzalloc(sizeof(u32) * mhi_cntrl->total_ev_rings,
+	mhi_cntrl->debug_events = (u32 *) kzalloc(sizeof(u32) * mhi_cntrl->total_ev_rings,
 				       GFP_KERNEL);
 	mhi_cntrl->debugfs_dentry =
 			debugfs_create_dir(dev_name(&mhi_cntrl->mhi_dev->dev),
@@ -518,12 +519,15 @@ void mhi_destroy_debugfs(struct mhi_controller *mhi_cntrl)
 {
 	struct debug_device *itr, *tmp;
 
-	list_for_each_entry_safe(itr, tmp, &verbose_list, node) {
+	if (!list_empty(&mhi_cntrl->verbose_list)) {
+		list_for_each_entry_safe(itr, tmp, &mhi_cntrl->verbose_list, node) {
 			list_del(&itr->node);
 			kfree(itr);
+		}
 	}
-	kfree(debug_chans);
-	kfree(debug_events);
+
+	kfree(mhi_cntrl->debug_chans);
+	kfree(mhi_cntrl->debug_events);
 
 	debugfs_remove_recursive(mhi_cntrl->debugfs_dentry);
 	mhi_cntrl->debugfs_dentry = NULL;
