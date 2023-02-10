@@ -33,6 +33,7 @@ BUILT_MODULE_LOCATION[5]=mhi-host/drivers/net/wwan
 DEST_MODULE_LOCATION[5]=/extra
 STRIP[5]=no
 
-AUTOINSTALL=yes
+AUTOINSTALL=no
 NO_WEAK_MODULES=yes
-POST_BUILD="mhi-host/rpm/module-symvers-save $dkms_tree"
+POST_BUILD="mhi-host/rpm/post-build-remove.sh $dkms_tree $kernelver build"
+POST_REMOVE="mhi-host/rpm/post-build-remove.sh $dkms_tree $kernelver remove"

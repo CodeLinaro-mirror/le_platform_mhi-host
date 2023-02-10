@@ -1,8 +1,0 @@
-#!/bin/sh
-
-dkms_tree=$1
-SRC_DIR=$dkms_tree/$module/$module_version/build
-DST_DIR=/lib/modules/`uname -r`/build
-
-mkdir -p ${DST_DIR}/mhi-syms
-cat ${SRC_DIR}/Module.symvers > ${DST_DIR}/mhi-syms/Module.symvers
