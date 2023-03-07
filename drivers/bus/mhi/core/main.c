@@ -1520,7 +1520,7 @@ int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 	if (unlikely(MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state)))
 		return -EIO;
 
-	read_lock_irqsave(&mhi_chan->lock, flags);
+	write_lock_irqsave(&mhi_chan->lock, flags);
 
 	if (get_nr_avail_ring_elements(mhi_cntrl, &mhi_chan->tre_ring) < num) {
 		ret = -EAGAIN;
@@ -1542,7 +1542,7 @@ int mhi_queue_n_dma(struct mhi_device *mhi_dev, enum dma_data_direction dir,
 		mhi_cntrl->runtime_put(mhi_cntrl);
 
 error:
-	read_unlock_irqrestore(&mhi_chan->lock, flags);
+	write_unlock_irqrestore(&mhi_chan->lock, flags);
 
 	return ret;
 }
