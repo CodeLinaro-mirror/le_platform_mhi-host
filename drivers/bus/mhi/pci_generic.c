@@ -525,7 +525,7 @@ static int mhi_pci_get_vf_num(struct mhi_controller *mhi_cntrl)
 {
 	struct pci_dev *pdev = to_pci_dev(mhi_cntrl->cntrl_dev);
 	if (pdev->is_virtfn)
-		return PCI_FUNC(pdev->devfn);
+		return PCI_DEVFN(PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
 
 	return -EOPNOTSUPP;
 }
