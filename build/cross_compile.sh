@@ -85,7 +85,7 @@ if [[ ! -f "out/install.sh" ]]; then
 	echo "echo Installing following kernel modules for \$$uname_str:" >> out/install.sh
 	echo "echo \$(cat \$$uname_str/etc/modules | tr '\n' ' ')" >> out/install.sh
 	echo "cat \$$uname_str/etc/modules | xargs -I % sh -c 'grep -qxF % /etc/modules || echo % >> /etc/modules'" >> out/install.sh
-	echo "mkdir -p /lib/firmware/qcom/sdx65m" >> out/install.sh
+	echo "if [[ \$1 == SDX65 ]] ; then mkdir -p /lib/firmware/qcom/sdx65m; elif [[ \$1 == SDX75 ]]; then mkdir -p /lib/firmware/qcom/sdx75m; fi" >> out/install.sh
 	echo "cp \$$uname_str/etc/udev/rules.d/*.rules /etc/udev/rules.d/" >> out/install.sh
 	echo "udevadm control --reload" >> out/install.sh
 	echo "cp \$$uname_str/etc/mhi_dynamicdebug.sh /etc/mhi_dynamicdebug.sh" >> out/install.sh
