@@ -398,7 +398,7 @@ static void mhi_net_remove(struct mhi_device *mhi_dev)
 	free_netdev(mhi_netdev->ndev);
 }
 
-static const struct mhi_device_info mhi_swip0 = {
+static const struct mhi_device_info mhi_swip = {
 	.netname = "mhi_swip%d",
 	.ethernet_if = false,
 };
@@ -409,11 +409,17 @@ static const struct mhi_device_info mhi_swip_ethernet = {
 	.ethernet_if = true,
 };
 
+/* Make .ethernet_if as true to enable IF as ethernet */
+static const struct mhi_device_info mhi_hwip_ethernet = {
+	.netname = "mhi_hwip%d",
+	.ethernet_if = true,
+};
+
 static const struct mhi_device_id mhi_net_id_table[] = {
 	/* Software data PATH (to modem CPU) */
-	{ .chan = "IP_SW0", .driver_data = (kernel_ulong_t)&mhi_swip0 },
+	{ .chan = "IP_SW0", .driver_data = (kernel_ulong_t)&mhi_swip },
 	/* Software data PATH (to modem CPU) */
-	{ .chan = "IP_SW1", .driver_data = (kernel_ulong_t)&mhi_swip0 },
+	{ .chan = "IP_SW1", .driver_data = (kernel_ulong_t)&mhi_swip },
 	/** Software data PATH (to modem CPU)
 	 * IP_SW2 is used by netfconf mananger which
 	 * requires ethernet packet header
@@ -421,6 +427,19 @@ static const struct mhi_device_id mhi_net_id_table[] = {
 	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
 	/* Software data PATH for S-plane */
 	{ .chan = "IP_SW3", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+
+	/* Hardware data path for FH LTE */
+	{ .chan = "IP_HW2", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW3", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW4", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW5", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW6", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW7", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW8", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW9", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW10", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW11", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW12", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
 	{}
 };
 MODULE_DEVICE_TABLE(mhi, mhi_net_id_table);
