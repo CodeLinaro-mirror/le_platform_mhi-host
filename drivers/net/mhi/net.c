@@ -427,7 +427,19 @@ static const struct mhi_device_id mhi_net_id_table[] = {
 	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
 	/* Software data PATH for S-plane */
 	{ .chan = "IP_SW3", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
-
+	/* Software data path (broadcast) for FH LTE */
+	{ .chan = "IP_SW4", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW5", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW6", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW7", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW8", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW9", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW10", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW11", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW12", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW13", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW14", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW15", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
 	/* Hardware data path for FH LTE */
 	{ .chan = "IP_HW2", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
 	{ .chan = "IP_HW3", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
