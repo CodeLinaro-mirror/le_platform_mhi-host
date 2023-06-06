@@ -1261,9 +1261,9 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	mhi_tre->dword[0] = MHI_TRE_DATA_DWORD0(info->len);
 	mhi_tre->dword[1] = MHI_TRE_DATA_DWORD1(bei, eot, eob, chain);
 
-	dev_dbg(dev, "WP: 0x%llx TRE: 0x%llx 0x%08x 0x%08x\n",
-		(unsigned long long int) mhi_tre, mhi_tre->ptr,
-		mhi_tre->dword[0], mhi_tre->dword[1]);
+	dev_dbg(dev, "%d: WP: 0x%llx(0x%llx) TRE: 0x%llx 0x%08x 0x%08x\n",
+		mhi_chan->chan, (unsigned long long int) mhi_tre, *tre_ring->ctxt_wp,
+		mhi_tre->ptr, mhi_tre->dword[0], mhi_tre->dword[1]);
 
 	/* increment WP */
 	mhi_add_ring_element(mhi_cntrl, tre_ring);
