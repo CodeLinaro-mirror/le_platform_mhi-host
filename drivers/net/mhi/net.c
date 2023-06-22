@@ -117,6 +117,15 @@ static const struct net_device_ops mhi_netdev_ops = {
 	.ndo_get_stats64	= mhi_ndo_get_stats64,
 };
 
+static const struct net_device_ops mhi_eth_netdev_ops = {
+	.ndo_open               = mhi_ndo_open,
+	.ndo_stop               = mhi_ndo_stop,
+	.ndo_start_xmit         = mhi_ndo_xmit,
+	.ndo_get_stats64	= mhi_ndo_get_stats64,
+	.ndo_set_mac_address	= eth_mac_addr,
+	.ndo_validate_addr	= eth_validate_addr,
+};
+
 static void mhi_net_setup(struct net_device *ndev)
 {
 	ndev->header_ops = NULL;  /* No header */
@@ -133,7 +142,7 @@ static void mhi_net_setup(struct net_device *ndev)
 
 static void mhi_ethernet_setup(struct net_device *ndev)
 {
-	ndev->netdev_ops = &mhi_netdev_ops;
+	ndev->netdev_ops = &mhi_eth_netdev_ops;
 	ether_setup(ndev);
 	ndev->min_mtu = ETH_MIN_MTU;
 	ndev->max_mtu = ETH_MAX_MTU;
