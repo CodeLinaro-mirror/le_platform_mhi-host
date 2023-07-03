@@ -627,6 +627,8 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 		pf_mhi_cntrl = &pf_mhi_pdev->mhi_cntrl;
 
 		mhi_cntrl->pf_mhi_cntrl = pf_mhi_cntrl;
+
+		pdev->dev_flags |= PCI_DEV_FLAGS_NO_FLR_RESET;
 	}
 
 	err = mhi_register_controller(mhi_cntrl, mhi_cntrl_config);
