@@ -36,7 +36,8 @@ fi
 
 cd $MHI_BUILD_ROOT
 
-install $MHI_BUILD_ROOT/include/linux/local_mhi.h /usr/include/linux
+install $MHI_BUILD_ROOT/include/linux/local_mhi.h /lib/modules/$(uname -r)/build/include/linux/
+install $MHI_BUILD_ROOT/include/linux/wwan.h /lib/modules/$(uname -r)/build/include/linux/
 
 if [[ $1 == "mhi" ]]
 then
