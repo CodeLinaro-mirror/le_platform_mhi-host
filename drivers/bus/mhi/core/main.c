@@ -1340,15 +1340,18 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	buf_info->wp = tre_ring->wp;
 	buf_info->dir = mhi_chan->dir;
 
-	if (info->len > mhi_cntrl->max_tre_len)
-		return -EMSGSIZE;
+	if (info->len > mhi_cntrl->max_tre_len) {
+		ret = -EMSGSIZE;
+		goto error;
+	}
 
 	buf_info->len = info->len;
 
 	if (!info->p_addr) {
 		ret = mhi_cntrl->map_single(mhi_cntrl, buf_info);
-		if (ret)
-			return ret;
+		if (ret) {
+			goto error;
+		}
 	}
 
 	eob = !!(flags & MHI_EOB);
@@ -1375,6 +1378,9 @@ int mhi_gen_tre(struct mhi_controller *mhi_cntrl, struct mhi_chan *mhi_chan,
 	write_unlock_bh(&mhi_chan->lock);
 
 	return 0;
+error:
+	write_unlock_bh(&mhi_chan->lock);
+	return ret;
 }
 
 int mhi_queue_buf(struct mhi_device *mhi_dev, enum dma_data_direction dir,
