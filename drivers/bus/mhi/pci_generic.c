@@ -152,6 +152,13 @@ struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
 	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
+	/* S-plane channel */
+	MHI_CHANNEL_CONFIG_UL(50, "IP_SW3", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(51, "IP_SW3", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+
 };
 
 struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
@@ -193,9 +200,9 @@ static struct mhi_event_config modem_qcom_v1_mhi_lsn_pf_events[] = {
 			 false, false, false, 0),
 	MHI_EVENT_CONFIG(5, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
 			 false, false, false, 0),
-	MHI_EVENT_CONFIG(6, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+	MHI_EVENT_CONFIG(6, 7, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
 			 false, false, false, 0),
-	MHI_EVENT_CONFIG(7, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+	MHI_EVENT_CONFIG(7, 8, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
 			 false, false, false, 0),
 };
 
