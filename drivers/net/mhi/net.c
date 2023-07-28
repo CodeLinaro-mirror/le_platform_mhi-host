@@ -404,7 +404,7 @@ static const struct mhi_device_info mhi_swip0 = {
 };
 
 /* Make .ethernet_if as true to enable IF as ethernet */
-static const struct mhi_device_info mhi_swip1 = {
+static const struct mhi_device_info mhi_swip_ethernet = {
 	.netname = "mhi_swip%d",
 	.ethernet_if = true,
 };
@@ -416,9 +416,11 @@ static const struct mhi_device_id mhi_net_id_table[] = {
 	{ .chan = "IP_SW1", .driver_data = (kernel_ulong_t)&mhi_swip0 },
 	/** Software data PATH (to modem CPU)
 	 * IP_SW2 is used by netfconf mananger which
-	 * requires etheret packket header
+	 * requires ethernet packet header
 	 */
-	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip1 },
+	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	/* Software data PATH for S-plane */
+	{ .chan = "IP_SW3", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
 	{}
 };
 MODULE_DEVICE_TABLE(mhi, mhi_net_id_table);
