@@ -208,12 +208,35 @@ static ssize_t time_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(time);
 
+static ssize_t tsc_time_show(struct device *dev,
+			 struct device_attribute *attr,
+			 char *buf)
+{
+	struct mhi_device *mhi_dev = to_mhi_device(dev);
+	ktime_t t_host_pre, t_host_post;
+	u32 t_device_lo, t_device_hi;
+	int ret;
+
+	ret = mhi_get_remote_time_ptp_sync(mhi_dev, &t_device_lo, &t_device_hi,
+					   &t_host_pre, &t_host_post);
+	if (ret) {
+		dev_err(dev, "Failed to obtain time, ret:%d\n", ret);
+		return scnprintf(buf, PAGE_SIZE,
+				 "Request failed or feature unsupported\n");
+	}
+
+	return scnprintf(buf, PAGE_SIZE, "local pre: %llu and post: %llu remote hi: %u lo: %u (ticks)\n",
+			 t_host_pre, t_host_post, t_device_hi, t_device_lo);
+}
+static DEVICE_ATTR_RO(tsc_time);
+
 static struct attribute *mhi_dev_attrs[] = {
 	&dev_attr_serial_number.attr,
 	&dev_attr_oem_pk_hash.attr,
 	&dev_attr_edl_download.attr,
 	&dev_attr_force_edl.attr,
 	&dev_attr_time.attr,
+	&dev_attr_tsc_time.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(mhi_dev);
@@ -221,8 +244,9 @@ ATTRIBUTE_GROUPS(mhi_dev);
 int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 				  ktime_t (*time_get)(void))
 {
-	struct mhi_timesync *mhi_tsync = kzalloc(sizeof(*mhi_tsync),
-						 GFP_KERNEL);
+	struct mhi_timesync *mhi_tsync, *mhi_tsc_tsync;
+
+	mhi_tsync = kzalloc(sizeof(*mhi_tsync), GFP_KERNEL);
 
 	if (!mhi_tsync)
 		return -ENOMEM;
@@ -230,7 +254,18 @@ int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 	mhi_tsync->time_get = time_get;
 	mhi_cntrl->timesync = mhi_tsync;
 
+	mhi_tsc_tsync = kzalloc(sizeof(*mhi_tsync), GFP_KERNEL);
+	if (!mhi_tsc_tsync)
+		goto error;
+
+	mhi_tsc_tsync->time_get = time_get;
+	mhi_cntrl->tsc_timesync = mhi_tsc_tsync;
+
 	return 0;
+
+error:
+	kfree(mhi_cntrl->timesync);
+	return -ENOMEM;
 }
 EXPORT_SYMBOL_GPL(mhi_controller_setup_timesync);
 
@@ -252,6 +287,28 @@ static int mhi_init_timesync(struct mhi_controller *mhi_cntrl)
 
 	/* save time_offset for obtaining time via MMIO register reads */
 	mhi_tsync->time_reg = mhi_cntrl->regs + time_offset;
+
+	return 0;
+}
+
+static int mhi_init_tsc_timesync(struct mhi_controller *mhi_cntrl)
+{
+	struct mhi_timesync *mhi_tsc_tsync = mhi_cntrl->tsc_timesync;
+	u32 time_offset;
+	int ret;
+
+	if (!mhi_tsc_tsync)
+		return -EINVAL;
+
+	ret = mhi_get_capability_offset(mhi_cntrl, TSC_TIMESYNC_CAP_ID,
+					&time_offset);
+	if (ret)
+		return ret;
+
+	mutex_init(&mhi_tsc_tsync->mutex);
+
+	/* save time_offset for obtaining time via MMIO register reads */
+	mhi_tsc_tsync->time_reg = mhi_cntrl->regs + time_offset;
 
 	return 0;
 }
@@ -704,6 +761,9 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 	if (ret)
 		dev_err(dev, "Time synchronization setup failure\n");
 
+	ret = mhi_init_tsc_timesync(mhi_cntrl);
+	if (ret)
+		dev_err(dev, "TSC Time synchronization setup failure\n");
 	return 0;
 }
 

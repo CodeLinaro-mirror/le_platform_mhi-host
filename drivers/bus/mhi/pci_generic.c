@@ -141,6 +141,12 @@ struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
 	MHI_CHANNEL_CONFIG_DL(17, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
 			      false, false, 0, 0),
+	/* added for TSC TSYNC */
+	MHI_CHANNEL_CONFIG_UL(40, "MHI_PHC", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(41, "MHI_PHC", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
 	/* SW IP channels */
 	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 128, 5, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),

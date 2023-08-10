@@ -471,6 +471,7 @@ struct mhi_controller {
 	spinlock_t wlock;
 	struct mhi_link_info mhi_link_info;
 	struct mhi_timesync *timesync;
+	struct mhi_timesync *tsc_timesync;
 	struct work_struct st_worker;
 	struct workqueue_struct *hiprio_wq;
 	wait_queue_head_t state_event;
@@ -947,5 +948,21 @@ int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
 			     ktime_t *t_host,
 			     u64 *t_dev);
+
+/**
+ * mhi_get_remote_time_ptp_sync - get external soc time relative to local soc
+ * time pre and post using MMIO method.
+ * @mhi_dev: Device associated with the channels
+ * @t_dev_low: Pointer to output remote soc time of lower dword
+ * @t_dev_high: Pointer to output remote soc time of high dword
+ * @t_host_pre: Pointer to output of Pre local soc time
+ * @t_host_post: Pointer to output of Post local soc time
+ *
+ * Returns:
+ * 0 for success, error code for failure
+ */
+int mhi_get_remote_time_ptp_sync(struct mhi_device *mhi_dev,
+			     u32 *t_dev_low, u32 *t_dev_high,
+                             ktime_t *t_host_pre, ktime_t *t_host_post);
 
 #endif /* _MHI_H_ */

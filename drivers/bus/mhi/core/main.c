@@ -2018,6 +2018,11 @@ int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
 	if (!mhi_tsync)
 		return -EINVAL;
 
+	if (!mhi_tsync->time_reg) {
+		dev_err(dev, "Time sync register not found\n");
+		return -EINVAL;
+	}
+
 	if (unlikely(MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state))) {
 		dev_err(dev, "MHI is not in active state, pm_state:%s\n",
 			to_mhi_pm_state_str(mhi_cntrl->pm_state));
@@ -2073,3 +2078,79 @@ int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mhi_get_remote_time_sync);
+
+int mhi_get_remote_time_ptp_sync(struct mhi_device *mhi_dev,
+			     u32 *t_dev_low, u32 *t_dev_high,
+			     ktime_t *t_host_pre, ktime_t *t_host_post)
+{
+	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
+	struct device *dev = &mhi_cntrl->mhi_dev->dev;
+	struct mhi_timesync *mhi_tsc_tsync = mhi_cntrl->tsc_timesync;
+	u32 tdev_lo = U32_MAX, tdev_hi = U32_MAX;
+	int ret, i;
+
+	/* not all devices support time features */
+	if (!mhi_tsc_tsync)
+		return -EINVAL;
+
+	if (!mhi_tsc_tsync->time_reg) {
+		dev_err(dev, "TSC Time sync register not found\n");
+		return -EINVAL;
+	}
+
+	if (unlikely(MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state))) {
+		dev_err(dev, "MHI is not in active state, pm_state:%s\n",
+			to_mhi_pm_state_str(mhi_cntrl->pm_state));
+		return -EIO;
+	}
+
+	/* bring to M0 state */
+	ret = mhi_device_get_sync(mhi_cntrl->mhi_dev);
+	if (ret)
+		return ret;
+
+	mutex_lock(&mhi_tsc_tsync->mutex);
+	mhi_cntrl->runtime_get(mhi_cntrl);
+
+	/*
+	 * time critical code to fetch device times,
+	 * delay between these two steps should be
+	 * deterministic as possible.
+	 */
+	preempt_disable();
+	local_irq_disable();
+
+	*t_host_pre = mhi_tsc_tsync->time_get();
+	/* Avoid skew with back to back reads to ensure link is in L0 */
+	for (i = 0; i < 3; i++) {
+		ret = mhi_read_reg(mhi_cntrl, mhi_tsc_tsync->time_reg,
+				   TSC_TIMESYNC_TIME_HIGH_OFFSET, &tdev_hi);
+		if (ret)
+			dev_err(dev, "Time HIGH register read error\n");
+
+		ret = mhi_read_reg(mhi_cntrl, mhi_tsc_tsync->time_reg,
+				   TSC_TIMESYNC_TIME_LOW_OFFSET, &tdev_lo);
+		if (ret)
+			dev_err(dev, "Time LOW register read error\n");
+
+		ret = mhi_read_reg(mhi_cntrl, mhi_tsc_tsync->time_reg,
+				   TSC_TIMESYNC_TIME_HIGH_OFFSET, &tdev_hi);
+		if (ret)
+			dev_err(dev, "Time HIGH register read error\n");
+	}
+
+	*t_dev_low = tdev_lo;
+	*t_dev_high = tdev_hi;
+	*t_host_post = mhi_tsc_tsync->time_get();
+
+	local_irq_enable();
+	preempt_enable();
+
+	mhi_cntrl->runtime_put(mhi_cntrl);
+	mutex_unlock(&mhi_tsc_tsync->mutex);
+
+	mhi_device_put(mhi_cntrl->mhi_dev);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mhi_get_remote_time_ptp_sync);
