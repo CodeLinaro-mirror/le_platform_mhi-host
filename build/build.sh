@@ -7,7 +7,7 @@ MHI_SCRIPT_RELATIVE_DIR=$(dirname "${BASH_SOURCE[0]}")
 usage() {
 echo "Usage:"
 echo ""
-echo "$0 <mhi / net / wwan / all / clean> <all / clean>"
+echo "$0 <mhi / ptp / net / wwan / all / clean> <all / clean>"
 echo "$0 (with \"all\" or no arguments) will build all modules"
 echo "$0 clean or $0 all clean: will clean all modules"
 echo "$0 <module_name> clean will clean that module"
@@ -42,6 +42,10 @@ install $MHI_BUILD_ROOT/include/linux/wwan.h /lib/modules/$(uname -r)/build/incl
 if [[ $1 == "mhi" ]]
 then
 	make -C drivers/bus/mhi $2
+elif [[ $1 == "ptp" ]]
+then
+	make -C drivers/bus/mhi $2
+	make -C drivers/ptp $2
 elif [[ $1 == "net" ]]
 then
 	make -C drivers/bus/mhi $2
@@ -56,11 +60,13 @@ then
 	make -C drivers/bus/mhi $1
 	make -C drivers/net/wwan $1
 	make -C drivers/net/mhi $1
+	make -C drivers/ptp $1
 elif [[ $1 == "" ]] || [[ $1 == "all" ]]
 then
 	make -C drivers/bus/mhi $2
 	make -C drivers/net/wwan $2
 	make -C drivers/net/mhi $2
+	make -C drivers/ptp $2
 else
 	usage
 	exit 127
