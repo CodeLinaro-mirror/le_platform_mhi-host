@@ -33,6 +33,11 @@ BUILT_MODULE_LOCATION[5]=mhi-host/drivers/net/wwan
 DEST_MODULE_LOCATION[5]=/extra
 STRIP[5]=no
 
+BUILT_MODULE_NAME[6]=mhi_ptp
+BUILT_MODULE_LOCATION[6]=mhi-host/drivers/ptp
+DEST_MODULE_LOCATION[6]=/extra
+STRIP[6]=no
+
 AUTOINSTALL=no
 NO_WEAK_MODULES=yes
 POST_BUILD="mhi-host/rpm/post-build-remove.sh $dkms_tree $kernelver build"

@@ -1,4 +1,4 @@
-obj-m += mhi-host/drivers/bus/mhi/ mhi-host/drivers/net/mhi/ mhi-host/drivers/net/wwan/
+obj-m += mhi-host/drivers/bus/mhi/ mhi-host/drivers/net/mhi/ mhi-host/drivers/net/wwan/ mhi-host/drivers/ptp/
 
 KERNELRELEASE=$(shell uname -r)
 

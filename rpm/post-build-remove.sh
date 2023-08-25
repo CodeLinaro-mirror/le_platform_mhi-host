@@ -14,10 +14,10 @@ DRACUT_CONF_FILE=/etc/dracut.conf.d/mhi-host.conf
 if [ "$op" == "build" ];
 then
     cp $SRC_DIR/Module.symvers $DST_FILE_PATH
-    echo 'omit_drivers+=" mhi mhi_uci mhi_pci mhi_net wwan_mhi wwan "' > $DRACUT_CONF_FILE
+    echo 'omit_drivers+=" mhi mhi_uci mhi_pci mhi_net wwan_mhi wwan mhi_ptp "' > $DRACUT_CONF_FILE
 elif [ "$op" == "remove" ];
 then
     rm -f $DST_FILE_PATH
     rm -f $DRACUT_CONF_FILE
-    rmmod mhi_uci wwan_mhi mhi_pci mhi_net wwan mhi > /dev/null 2>&1
+    rmmod mhi_ptp mhi_uci wwan_mhi mhi_pci mhi_net wwan mhi > /dev/null 2>&1
 fi
