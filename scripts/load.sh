@@ -1,6 +1,9 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (c) 2021, The Linux Foundation. All rights reserved.
+#
+# Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+#
 
 debug_mhi() {
 echo -n "module mhi $1p" > /sys/kernel/debug/dynamic_debug/control
@@ -35,6 +38,10 @@ echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "module dtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
+debug_ptp() {
+echo -n "module mhi_ptp $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
 load_mhi() {
 if ! insmod drivers/bus/mhi/core/mhi.ko; then
 	echo "Failed to load KO"
@@ -62,6 +69,15 @@ fi
 lsmod | grep mhi_pci
 }
 
+load_ptp() {
+if ! insmod drivers/ptp/mhi_ptp.ko; then
+	echo "Failed to load KO"
+	exit 1
+fi
+
+lsmod | grep mhi_ptp
+}
+
 load_net() {
 if ! insmod drivers/net/mhi/mhi_net.ko; then
 	echo "Failed to load KO"
@@ -87,7 +103,7 @@ lsmod | grep wwan
 usage() {
 echo "Usage:"
 echo ""
-echo "$0 <mhi / pci / net / wwan / all> <-v for verbose output to enable dynamic debug>"
+echo "$0 <mhi / pci / ptp / net / wwan / all> <-v for verbose output to enable dynamic debug>"
 echo "If verbose flag is used, user must manually disable dynamic debug if needed, using scripts/debug.sh -d"
 echo "$0 will load all modules"
 echo "Please run $0 as root"
@@ -132,6 +148,13 @@ then
 	then
 		debug_pci +
 	fi
+elif [[ $1 == "ptp" ]]
+then
+	load_ptp
+	if [[ $2 == "-v" ]]
+	then
+		debug_ptp +
+	fi
 elif [[ $1 == "net" ]]
 then
 	load_net
@@ -158,9 +181,11 @@ then
 		debug_wwan +
 	fi
 	load_pci
+	load_ptp
 	if [[ $1 == "-v" ]] || [[ $2 == "-v" ]]
 	then
 		debug_pci +
+		debug_ptp +
 	fi
 else
 	usage

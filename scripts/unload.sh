@@ -1,6 +1,9 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (c) 2021, The Linux Foundation. All rights reserved.
+#
+# Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+#
 
 debug_mhi() {
 echo -n "module mhi $1p" > /sys/kernel/debug/dynamic_debug/control
@@ -35,10 +38,20 @@ echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "module dtr_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
+debug_ptp() {
+echo -n "module mhi_ptp $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
 unload_pci() {
 rmmod mhi_pci
 
 lsmod | grep mhi_pci
+}
+
+unload_ptp() {
+rmmod mhi_ptp
+
+lsmod | grep mhi_ptp
 }
 
 unload_mhi() {
@@ -64,7 +77,7 @@ lsmod | grep mhi_wwan
 usage() {
 echo "Usage:"
 echo ""
-echo "$0 <mhi / pci / net / wwan / all>"
+echo "$0 <mhi / pci / ptp / net / wwan / all>"
 echo "$0 will unload all modules"
 echo "Please run $0 as root"
 echo "<-h or --help> shows this text"
@@ -85,6 +98,10 @@ elif [[ $1 == "pci" ]]
 then
 	unload_pci
 	debug_pci -
+elif [[ $1 == "ptp" ]]
+then
+	unload_ptp
+	debug_ptp -
 elif [[ $1 == "net" ]]
 then
 	unload_net
@@ -98,11 +115,13 @@ then
 	unload_wwan
 	unload_net
 	unload_pci
+	unload_ptp
 	unload_mhi
 
 	debug_wwan -
 	debug_net -
 	debug_pci -
+	debug_ptp -
 	debug_mhi -
 else
 	usage

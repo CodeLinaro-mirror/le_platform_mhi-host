@@ -1,6 +1,9 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (c) 2021, The Linux Foundation. All rights reserved.
+#
+# Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+#
 
 debug_mhi() {
 echo -n "module mhi $1p" > /sys/kernel/debug/dynamic_debug/control
@@ -34,6 +37,10 @@ echo -n "module wwan_core $1p" > /sys/kernel/debug/dynamic_debug/control
 echo -n "module wwan_mhi $1p" > /sys/kernel/debug/dynamic_debug/control
 }
 
+debug_ptp() {
+echo -n "module mhi_ptp $1p" > /sys/kernel/debug/dynamic_debug/control
+}
+
 usage() {
 echo "Usage:"
 echo ""
@@ -58,12 +65,14 @@ if [[ $(cat /boot/config-$(uname -r) | grep CONFIG_DYNAMIC_DEBUG) == "CONFIG_DYN
 		debug_pci -
 		debug_net -
 		debug_wwan -
+		debug_ptp -
 		echo "Disabled dynamic debug for MHI and client drivers"
 	elif [[ $1 == "-t" || $1 == "--temp" ]]; then
 		debug_mhi +
 		debug_pci +
 		debug_net +
 		debug_wwan +
+		debug_ptp +
 		echo "Temporarily enabled dynamic debug for MHI and client drivers"
 		if [[ $2 != "" ]]; then
 			sleep $2
@@ -74,12 +83,14 @@ if [[ $(cat /boot/config-$(uname -r) | grep CONFIG_DYNAMIC_DEBUG) == "CONFIG_DYN
 		debug_pci -
 		debug_net -
 		debug_wwan -
+		debug_ptp -
 		echo "Disabled dynamic debug for MHI and client drivers"
 	else
 		debug_mhi +
 		debug_pci +
 		debug_net +
 		debug_wwan +
+		debug_ptp +
 		echo "Enabled dynamic debug for MHI and client drivers"
 	fi
 else
