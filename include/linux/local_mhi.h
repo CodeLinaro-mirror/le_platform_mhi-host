@@ -934,7 +934,17 @@ struct mhi_device *mhi_get_device_for_channel(struct mhi_controller *mhi_cntrl,
  */
 int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 				  ktime_t (*time_get)(void));
+/**
+ * mhi_controller_setup_tsc_timesync - Set support for tsc time synchronization feature
+ * @mhi_cntrl: MHI controller
+ * @time_get: Callback to set for the MHI controller to receive host real time (TOD)
+ *
+ * Returns:
+ * 0 for success, error code for failure
+ */
 
+int mhi_controller_setup_tsc_timesync(struct mhi_controller *mhi_cntrl,
+				  ktime_t (*time_get)(void));
 /**
  * mhi_get_remote_time_sync - Get external soc time relative to local soc time
  * using MMIO method.

@@ -244,7 +244,7 @@ ATTRIBUTE_GROUPS(mhi_dev);
 int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 				  ktime_t (*time_get)(void))
 {
-	struct mhi_timesync *mhi_tsync, *mhi_tsc_tsync;
+	struct mhi_timesync *mhi_tsync;
 
 	mhi_tsync = kzalloc(sizeof(*mhi_tsync), GFP_KERNEL);
 
@@ -254,20 +254,26 @@ int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 	mhi_tsync->time_get = time_get;
 	mhi_cntrl->timesync = mhi_tsync;
 
-	mhi_tsc_tsync = kzalloc(sizeof(*mhi_tsync), GFP_KERNEL);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mhi_controller_setup_timesync);
+
+int mhi_controller_setup_tsc_timesync(struct mhi_controller *mhi_cntrl,
+				  ktime_t (*time_get)(void))
+{
+	struct mhi_timesync *mhi_tsc_tsync;
+
+	mhi_tsc_tsync = kzalloc(sizeof(*mhi_tsc_tsync), GFP_KERNEL);
+
 	if (!mhi_tsc_tsync)
-		goto error;
+		return -ENOMEM;
 
 	mhi_tsc_tsync->time_get = time_get;
 	mhi_cntrl->tsc_timesync = mhi_tsc_tsync;
 
 	return 0;
-
-error:
-	kfree(mhi_cntrl->timesync);
-	return -ENOMEM;
 }
-EXPORT_SYMBOL_GPL(mhi_controller_setup_timesync);
+EXPORT_SYMBOL_GPL(mhi_controller_setup_tsc_timesync);
 
 static int mhi_init_timesync(struct mhi_controller *mhi_cntrl)
 {
