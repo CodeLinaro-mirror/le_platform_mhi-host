@@ -559,6 +559,11 @@ static ktime_t mhi_local_time_get(void)
 	return ktime_get();
 }
 
+static ktime_t mhi_real_time_get(void)
+{
+	return ktime_get_real();
+}
+
 static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	const struct mhi_pci_dev_info *info = (struct mhi_pci_dev_info *) id->driver_data;
@@ -652,6 +657,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (err)
 		goto err_disable_reporting;
 
+	err = mhi_controller_setup_tsc_timesync(mhi_cntrl, &mhi_real_time_get);
+	if (err)
+		goto err_tsync_disable_reporting;
+
 	/* MHI bus does not power up the controller by default */
 	err = mhi_prepare_for_power_up(mhi_cntrl);
 	if (err) {
@@ -687,6 +696,9 @@ err_unprepare:
 	mhi_unprepare_after_power_down(mhi_cntrl);
 err_unregister:
 	mhi_unregister_controller(mhi_cntrl);
+	kfree(mhi_cntrl->tsc_timesync);
+err_tsync_disable_reporting:
+	kfree(mhi_cntrl->timesync);
 err_disable_reporting:
 	pci_disable_pcie_error_reporting(pdev);
 
