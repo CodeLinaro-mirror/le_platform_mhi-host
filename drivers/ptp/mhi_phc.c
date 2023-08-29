@@ -24,6 +24,12 @@ struct mhi_phc_dev {
 	bool enabled;
 };
 
+static int qcom_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+{
+       pr_debug("%s: dummy\n", __func__);
+       return 0;
+}
+
 static int qcom_ptp_gettimex64(struct ptp_clock_info *ptp, struct timespec64 *ts,
                           struct ptp_system_timestamp *sts)
 {
@@ -60,6 +66,7 @@ static struct ptp_clock_info qcom_ptp_clock_info = {
 	.name     = "MHI_PHC",
 	.max_adj  = 999999999,
 	.gettimex64 =  qcom_ptp_gettimex64,
+	.adjfreq  = qcom_ptp_adjfreq,
 };
 
 /* Dummy transfer call-backs */
