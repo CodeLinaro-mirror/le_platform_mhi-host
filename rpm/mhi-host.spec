@@ -51,6 +51,10 @@ install -m 644 %{_sourcedir}/%{package_name}-%{version}/mhi-host/build/*.rules %
 mkdir -p %{buildroot}%{_sysconfdir}/modules-load.d
 install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/mhi-host.conf %{buildroot}%{_sysconfdir}/modules-load.d/mhi-host.conf
 
+mkdir -p %{buildroot}/EOM_SCRIPTS
+install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/lassen_log_gen.sh %{buildroot}/EOM_SCRIPTS/lassen_log_gen.sh
+install -m 755 %{_sourcedir}/%{package_name}-%{version}/mhi-host/lassen_log_parser_script.py %{buildroot}/EOM_SCRIPTS/lassen_log_parser_script.py
+
 %clean
 if [ "$RPM_BUILD_ROOT" != "/" ]; then
         rm -rf $RPM_BUILD_ROOT
@@ -85,7 +89,10 @@ exit 0
 %config %{_sysconfdir}/udev/rules.d/99-mhi-permissions.rules
 %config %{_sysconfdir}/udev/rules.d/99-mhi-sriov-disable.rules
 %config %{_sysconfdir}/udev/rules.d/99-mhi-sriov-enable.rules
+%config /EOM_SCRIPTS/lassen_log_gen.sh
+%config /EOM_SCRIPTS/lassen_log_parser_script.py
 %config %{_sysconfdir}/modules-load.d/mhi-host.conf
+
 
 %changelog
 * %(date "+%a %b %d %Y") %packager %{version}-%{release}
