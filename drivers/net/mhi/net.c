@@ -117,6 +117,15 @@ static const struct net_device_ops mhi_netdev_ops = {
 	.ndo_get_stats64	= mhi_ndo_get_stats64,
 };
 
+static const struct net_device_ops mhi_eth_netdev_ops = {
+	.ndo_open               = mhi_ndo_open,
+	.ndo_stop               = mhi_ndo_stop,
+	.ndo_start_xmit         = mhi_ndo_xmit,
+	.ndo_get_stats64	= mhi_ndo_get_stats64,
+	.ndo_set_mac_address	= eth_mac_addr,
+	.ndo_validate_addr	= eth_validate_addr,
+};
+
 static void mhi_net_setup(struct net_device *ndev)
 {
 	ndev->header_ops = NULL;  /* No header */
@@ -133,7 +142,7 @@ static void mhi_net_setup(struct net_device *ndev)
 
 static void mhi_ethernet_setup(struct net_device *ndev)
 {
-	ndev->netdev_ops = &mhi_netdev_ops;
+	ndev->netdev_ops = &mhi_eth_netdev_ops;
 	ether_setup(ndev);
 	ndev->min_mtu = ETH_MIN_MTU;
 	ndev->max_mtu = ETH_MAX_MTU;
@@ -398,7 +407,7 @@ static void mhi_net_remove(struct mhi_device *mhi_dev)
 	free_netdev(mhi_netdev->ndev);
 }
 
-static const struct mhi_device_info mhi_swip0 = {
+static const struct mhi_device_info mhi_swip = {
 	.netname = "mhi_swip%d",
 	.ethernet_if = false,
 };
@@ -409,11 +418,17 @@ static const struct mhi_device_info mhi_swip_ethernet = {
 	.ethernet_if = true,
 };
 
+/* Make .ethernet_if as true to enable IF as ethernet */
+static const struct mhi_device_info mhi_hwip_ethernet = {
+	.netname = "mhi_hwip%d",
+	.ethernet_if = true,
+};
+
 static const struct mhi_device_id mhi_net_id_table[] = {
 	/* Software data PATH (to modem CPU) */
-	{ .chan = "IP_SW0", .driver_data = (kernel_ulong_t)&mhi_swip0 },
+	{ .chan = "IP_SW0", .driver_data = (kernel_ulong_t)&mhi_swip },
 	/* Software data PATH (to modem CPU) */
-	{ .chan = "IP_SW1", .driver_data = (kernel_ulong_t)&mhi_swip0 },
+	{ .chan = "IP_SW1", .driver_data = (kernel_ulong_t)&mhi_swip },
 	/** Software data PATH (to modem CPU)
 	 * IP_SW2 is used by netfconf mananger which
 	 * requires ethernet packet header
@@ -421,6 +436,31 @@ static const struct mhi_device_id mhi_net_id_table[] = {
 	{ .chan = "IP_SW2", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
 	/* Software data PATH for S-plane */
 	{ .chan = "IP_SW3", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	/* Software data path (broadcast) for FH LTE */
+	{ .chan = "IP_SW4", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW5", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW6", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW7", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW8", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW9", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW10", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW11", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW12", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW13", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW14", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	{ .chan = "IP_SW15", .driver_data = (kernel_ulong_t)&mhi_swip_ethernet },
+	/* Hardware data path for FH LTE */
+	{ .chan = "IP_HW2", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW3", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW4", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW5", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW6", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW7", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW8", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW9", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW10", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW11", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
+	{ .chan = "IP_HW12", .driver_data = (kernel_ulong_t)&mhi_hwip_ethernet },
 	{}
 };
 MODULE_DEVICE_TABLE(mhi, mhi_net_id_table);

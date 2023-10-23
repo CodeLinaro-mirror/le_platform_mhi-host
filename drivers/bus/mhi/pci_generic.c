@@ -50,6 +50,7 @@ struct mhi_pci_dev_info {
 	unsigned int bar_num;
 	bool sideband_wake;
 	bool auto_edl_load;
+	unsigned int max_vfs;
 };
 
 #define MHI_CHANNEL_CONFIG_UL(ch_num, ch_name, elems, ev_ring, ee,	\
@@ -110,7 +111,19 @@ struct mhi_pci_dev_info {
 		.channel = ch_num,					\
 	}
 
-struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
+#define MHI_CONTROLLER_CONFIG(max_chan, timeout, dma_width, num_chan,	\
+			      chan_cfg, num_ev, ev_cfg)	        	\
+	{								\
+		.max_channels = max_chan,				\
+		.timeout_ms = timeout,					\
+		.dma_data_width = dma_width,				\
+		.num_channels = num_chan,				\
+		.ch_cfg = chan_cfg,					\
+		.num_events = num_ev,					\
+		.event_cfg = ev_cfg,					\
+	}
+
+struct mhi_channel_config modem_qcom_mhi_lsn_600_pf_channels[] = {
 	/* SBL channels  */
 	MHI_CHANNEL_CONFIG_UL(2, "SAHARA", 128, 1, MHI_EE_SBL,
 			      MHI_DB_BRST_DISABLE, false, 0,false, false, false, 0),
@@ -167,7 +180,120 @@ struct mhi_channel_config modem_qcom_v1_mhi_lsn_pf_channels[] = {
 
 };
 
-struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
+struct mhi_channel_config modem_qcom_mhi_lsn_601_pf_channels[] = {
+	/* SBL channels  */
+	MHI_CHANNEL_CONFIG_UL(2, "SAHARA", 128, 1, MHI_EE_SBL,
+			      MHI_DB_BRST_DISABLE, false, 0,false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(3, "SAHARA", 128, 1, MHI_EE_SBL,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_DL(25, "BL", 32, 1, MHI_EE_SBL,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	/* AMSS channels */
+	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 64, 2, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 64, 2, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 64, 3, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 64, 3, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(14, "NMEA", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(15, "NMEA", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(16, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(17, "CSM_CTRL", 32, 4, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	/* SW IP channels */
+	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 256, 5, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(47, "IP_SW0", 256, 5, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+
+	/* S-plane channel */
+	MHI_CHANNEL_CONFIG_UL(52, "IP_SW3", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(53, "IP_SW3", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+
+	/* FH LTE broadcast support */
+	MHI_CHANNEL_CONFIG_UL(54, "IP_SW4", 128, 8, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(55, "IP_SW4", 128, 8, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(56, "IP_SW5", 128, 9, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(57, "IP_SW5", 128, 9, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(58, "IP_SW6", 128, 10, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(59, "IP_SW6", 128, 10, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(60, "IP_SW7", 128, 11, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(61, "IP_SW7", 128, 11, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(62, "IP_SW8", 128, 12, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(63, "IP_SW8", 128, 12, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(64, "IP_SW9", 128, 13, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(65, "IP_SW9", 128, 13, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(66, "IP_SW10", 128, 14, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(67, "IP_SW10", 128, 14, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(68, "IP_SW11", 128, 15, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(69, "IP_SW11", 128, 15, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(70, "IP_SW12", 128, 16, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(71, "IP_SW12", 128, 16, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(72, "IP_SW13", 128, 17, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(73, "IP_SW13", 128, 17, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(74, "IP_SW14", 128, 18, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(75, "IP_SW14", 128, 18, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(76, "IP_SW15", 128, 19, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(77, "IP_SW15", 128, 19, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+};
+
+struct mhi_channel_config modem_qcom_mhi_lsn_600_vf_fapi_channels[] = {
 	/* SW IP channels */
 	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
 			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
@@ -193,7 +319,98 @@ struct mhi_channel_config modem_qcom_v1_mhi_lsn_vf_channels[] = {
 			      false, false, 0, 0),
 };
 
-static struct mhi_event_config modem_qcom_v1_mhi_lsn_pf_events[] = {
+struct mhi_channel_config modem_qcom_mhi_lsn_601_swip_channels[] = {
+	/* SW IP channels */
+	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(50, "IP_SW2", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(51, "IP_SW2", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+};
+
+/* FH LTE channel configuration for Lassen V2 */
+struct mhi_channel_config modem_qcom_mhi_lsn_601_fh_lte_channels[] = {
+	/* SW IP channels */
+	MHI_CHANNEL_CONFIG_UL(48, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(49, "IP_SW1", 128, 6, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(50, "IP_SW2", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(51, "IP_SW2", 128, 7, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+
+	/* HW channels for FH LTE */
+	MHI_CHANNEL_CONFIG_UL(104, "IP_HW2", 2048, 8, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(105, "IP_HW2", 2048, 9, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(106, "IP_HW3", 2048, 10, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(107, "IP_HW3", 2048, 11, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(108, "IP_HW4", 2048, 12, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(109, "IP_HW4", 2048, 13, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(110, "IP_HW5", 2048, 14, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(111, "IP_HW5", 2048, 15, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(112, "IP_HW6", 2048, 16, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(113, "IP_HW6", 2048, 17, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(114, "IP_HW7", 2048, 18, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(115, "IP_HW7", 2048, 19, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(116, "IP_HW8", 2048, 20, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(117, "IP_HW8", 2048, 21, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(118, "IP_HW9", 2048, 22, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(119, "IP_HW9", 2048, 23, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(120, "IP_HW10", 2048, 24, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(121, "IP_HW10", 2048, 25, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(122, "IP_HW11", 2048, 26, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(123, "IP_HW11", 2048, 27, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(124, "IP_HW12", 2048, 28, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(125, "IP_HW12", 2048, 29, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+	MHI_CHANNEL_CONFIG_UL(126, "IP_HW13", 2048, 30, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false, 0),
+	MHI_CHANNEL_CONFIG_DL(127, "IP_HW13", 2048, 31, MHI_EE_AMSS,
+			      MHI_DB_BRST_DISABLE, false, 0, false, false, false,
+			      false, false, 0, 0),
+};
+
+static struct mhi_event_config modem_qcom_mhi_lsn_600_pf_events[] = {
 	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
 			 false, false, false, 0),
 	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
@@ -212,7 +429,51 @@ static struct mhi_event_config modem_qcom_v1_mhi_lsn_pf_events[] = {
 			 false, false, false, 0),
 };
 
-static struct mhi_event_config modem_qcom_v1_mhi_lsn_vf_events[] = {
+/* Lassen v2-601 PF events */
+static struct mhi_event_config modem_qcom_mhi_lsn_601_pf_events[] = {
+	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(2, 3, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(3, 4, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(4, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(5, 6, MHI_ER_DATA, 512, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(6, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(7, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(8, 7, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(9, 8, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(10, 9, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(11, 10, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(12, 11, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(13, 12, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(14, 13, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(15, 14, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(16, 15, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(17, 16, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(18, 17, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(19, 18, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+};
+
+static struct mhi_event_config modem_qcom_mhi_lsn_600_vf_events[] = {
 	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
 			 false, false, false, 0),
 	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
@@ -239,41 +500,253 @@ static struct mhi_event_config modem_qcom_v1_mhi_lsn_vf_events[] = {
 			 true, false, false, 107),
 };
 
-static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_pf_config = {
-	.max_channels = 128,
-	.timeout_ms = 120000,
-	.dma_data_width = 32,
-	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_pf_channels),
-	.ch_cfg = modem_qcom_v1_mhi_lsn_pf_channels,
-	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_pf_events),
-	.event_cfg = modem_qcom_v1_mhi_lsn_pf_events,
+static struct mhi_event_config modem_qcom_mhi_lsn_601_vf_swip_events[] = {
+	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(2, 3, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(3, 4, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(4, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(5, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(6, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(7, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
 };
 
-static const struct mhi_controller_config modem_qcom_v1_mhi_lsn_vf_config = {
-	.max_channels = 128,
-	.timeout_ms = 120000,
-	.dma_data_width = 40,
-	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_vf_channels),
-	.ch_cfg = modem_qcom_v1_mhi_lsn_vf_channels,
-	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_lsn_vf_events),
-	.event_cfg = modem_qcom_v1_mhi_lsn_vf_events,
+/* Lassen V2 event ring configuration FH LTE HWIP channels */
+static struct mhi_event_config modem_qcom_mhi_lsn_601_vf_fh_lte_events[] = {
+	MHI_EVENT_CONFIG(0, 1, MHI_ER_CTRL, 64, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(1, 2, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(2, 3, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(3, 4, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(4, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(5, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(6, 5, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(7, 6, MHI_ER_DATA, 256, 0, MHI_DB_BRST_DISABLE,
+			 false, false, false, 0),
+	MHI_EVENT_CONFIG(8, 7, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 104),
+	MHI_EVENT_CONFIG(9, 8, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 105),
+	MHI_EVENT_CONFIG(10, 9, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 106),
+	MHI_EVENT_CONFIG(11, 10, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 107),
+	MHI_EVENT_CONFIG(12, 11, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 108),
+	MHI_EVENT_CONFIG(13, 12, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 109),
+	MHI_EVENT_CONFIG(14, 13, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 110),
+	MHI_EVENT_CONFIG(15, 14, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 111),
+	MHI_EVENT_CONFIG(16, 15, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 112),
+	MHI_EVENT_CONFIG(17, 16, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 113),
+	MHI_EVENT_CONFIG(18, 17, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 114),
+	MHI_EVENT_CONFIG(19, 18, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 115),
+	MHI_EVENT_CONFIG(20, 19, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 116),
+	MHI_EVENT_CONFIG(21, 20, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 117),
+	MHI_EVENT_CONFIG(22, 21, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 118),
+	MHI_EVENT_CONFIG(23, 22, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 119),
+	MHI_EVENT_CONFIG(24, 23, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 120),
+	MHI_EVENT_CONFIG(25, 24, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 121),
+	MHI_EVENT_CONFIG(26, 25, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 122),
+	MHI_EVENT_CONFIG(27, 26, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 123),
+	MHI_EVENT_CONFIG(28, 27, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 124),
+	MHI_EVENT_CONFIG(29, 28, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 125),
+	MHI_EVENT_CONFIG(30, 29, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 126),
+	MHI_EVENT_CONFIG(31, 30, MHI_ER_DATA, 2048, 0, MHI_DB_BRST_DISABLE,
+			 true, false, false, 127),
 };
 
-static struct mhi_pci_dev_info mhi_qcom_lassen_info = {
+/* Lassen V1 mhi controller configs for PF */
+static const struct mhi_controller_config modem_qcom_lsn_600_pf_config[] = {
+	MHI_CONTROLLER_CONFIG(128, 120000, 32,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_pf_channels),
+			      modem_qcom_mhi_lsn_600_pf_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_pf_events),
+			      modem_qcom_mhi_lsn_600_pf_events),
+};
+
+/* Lassen V2 mhi controller configs for PF */
+static const struct mhi_controller_config modem_qcom_lsn_601_pf_config[] = {
+	MHI_CONTROLLER_CONFIG(128, 120000, 32,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_pf_channels),
+			      modem_qcom_mhi_lsn_601_pf_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_pf_events),
+			      modem_qcom_mhi_lsn_601_pf_events),
+};
+
+/* Lassen V1 mhi controller configs for VF's, V1 has 4 VF's */
+static const struct mhi_controller_config modem_qcom_lsn_600_vf_config[] = {
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+};
+
+/**
+ * Lassen V2 mhi controller configs for VF's, V2 has 16 VF's
+ * First array controller index maps to VF-1, followed till 16 Vf's
+ */
+static const struct mhi_controller_config modem_qcom_lsn_601_vf_config[] = {
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_fapi_channels),
+			      modem_qcom_mhi_lsn_600_vf_fapi_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_600_vf_events),
+			      modem_qcom_mhi_lsn_600_vf_events),
+
+	/* Lassen V2 VF:5/8/9 has both SWIP channels and FH LTE HWIP channels */
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_fh_lte_channels),
+			      modem_qcom_mhi_lsn_601_fh_lte_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_fh_lte_events),
+			      modem_qcom_mhi_lsn_601_vf_fh_lte_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_fh_lte_channels),
+			      modem_qcom_mhi_lsn_601_fh_lte_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_fh_lte_events),
+			      modem_qcom_mhi_lsn_601_vf_fh_lte_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_fh_lte_channels),
+			      modem_qcom_mhi_lsn_601_fh_lte_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_fh_lte_events),
+			      modem_qcom_mhi_lsn_601_vf_fh_lte_events),
+
+	/* Lassen V2 VF:10 to 16 has only SWIP channels */
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+	MHI_CONTROLLER_CONFIG(128, 120000, 40,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_swip_channels),
+			      modem_qcom_mhi_lsn_601_swip_channels,
+			      ARRAY_SIZE(modem_qcom_mhi_lsn_601_vf_swip_events),
+			      modem_qcom_mhi_lsn_601_vf_swip_events),
+};
+
+static struct mhi_pci_dev_info mhi_qcom_lassen_v1_info = {
 	.name = "qcom-lassen",
 	.fw = "qcom/lassen/xbl_s.melf",
 	.edl = "qcom/lassen/edl.mbn",
-	.config = &modem_qcom_v1_mhi_lsn_pf_config,
-	.vf_config = &modem_qcom_v1_mhi_lsn_vf_config,
+	.config = modem_qcom_lsn_600_pf_config,
+	.vf_config = modem_qcom_lsn_600_vf_config,
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
 	.sideband_wake = false,
+	.max_vfs = ARRAY_SIZE(modem_qcom_lsn_600_vf_config),
+};
+
+static struct mhi_pci_dev_info mhi_qcom_lassen_v2_info = {
+	.name = "qcom-lassen",
+	.fw = "qcom/lassen/xbl_s.melf",
+	.edl = "qcom/lassen/edl.mbn",
+	.config = modem_qcom_lsn_601_pf_config,
+	.vf_config = modem_qcom_lsn_601_vf_config,
+	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
+	.sideband_wake = false,
+	.max_vfs = ARRAY_SIZE(modem_qcom_lsn_601_vf_config),
 };
 
 static const struct pci_device_id mhi_pci_id_table[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, LASSEN_V1_DEVICE_ID),
-		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_info },
+		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_v1_info },
 	{ PCI_DEVICE(PCI_VENDOR_ID_QCOM, LASSEN_V2_DEVICE_ID),
-		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_info },
+		.driver_data = (kernel_ulong_t) &mhi_qcom_lassen_v2_info },
 	{  }
 };
 MODULE_DEVICE_TABLE(pci, mhi_pci_id_table);
@@ -584,7 +1057,16 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	/* Assign mhi_cntrl_config based on PF/VF */
 	if (pdev->is_virtfn) {
-		mhi_cntrl_config = info->vf_config;
+		unsigned int vf_id = PCI_DEVFN(PCI_SLOT(pdev->devfn),
+                                                    PCI_FUNC(pdev->devfn)) - 1;
+
+		if (vf_id < info->max_vfs) {
+			mhi_cntrl_config = &info->vf_config[vf_id];
+		} else {
+			dev_err(&pdev->dev, "MHI PCI VF ID is not an valid ID:%u\n",
+				vf_id);
+			return -ENODEV;
+		}
 	} else {
 		mhi_cntrl_config = info->config;
 		timer_setup(&mhi_pdev->health_check_timer, health_check, 0);
