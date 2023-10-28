@@ -403,6 +403,8 @@ struct mhi_timesync {
  * @verbose_list: list of channels ring elements to be dumped from debugfs
  * @debug_chans: dumps channel ring elements from debugfs directory
  * @debug_events: dumps event ring elements form debugfs directory
+ * @allow_user_soc_reset: Allow user to perform SOC reset of endpoint using
+ *                        sysfs entry
  *
  * Fields marked as (required) need to be populated by the controller driver
  * before calling mhi_register_controller(). For the fields marked as (optional)
@@ -520,6 +522,7 @@ struct mhi_controller {
 	bool edl_download;
 	bool wake_set;
 	unsigned long irq_flags;
+	bool allow_user_soc_reset;
 };
 
 /**

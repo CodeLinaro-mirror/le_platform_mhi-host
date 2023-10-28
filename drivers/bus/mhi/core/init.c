@@ -230,6 +230,34 @@ static ssize_t tsc_time_show(struct device *dev,
 }
 static DEVICE_ATTR_RO(tsc_time);
 
+static ssize_t mhi_soc_reset_store(struct device *dev,
+			       struct device_attribute *attr,
+			       const char *buf, size_t count)
+{
+	struct mhi_device *mhi_dev = to_mhi_device(dev);
+	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
+	unsigned long val;
+	int ret;
+
+	ret = kstrtoul(buf, 10, &val);
+	if (ret < 0) {
+		dev_err(dev, "Could not parse string: %d\n", ret);
+		return ret;
+	}
+
+	mhi_cntrl->runtime_get(mhi_cntrl);
+
+	if (val && !mhi_cntrl->is_virtfn) {
+		mhi_soc_reset(mhi_cntrl);
+		dev_err(dev, "MHI-SOC reset performed\n");
+	}
+
+	mhi_cntrl->runtime_put(mhi_cntrl);
+
+	return count;
+}
+static DEVICE_ATTR_WO(mhi_soc_reset);
+
 static struct attribute *mhi_dev_attrs[] = {
 	&dev_attr_serial_number.attr,
 	&dev_attr_oem_pk_hash.attr,
@@ -239,7 +267,39 @@ static struct attribute *mhi_dev_attrs[] = {
 	&dev_attr_tsc_time.attr,
 	NULL,
 };
-ATTRIBUTE_GROUPS(mhi_dev);
+
+static struct attribute_group mhi_dev_group = {
+	.attrs = mhi_dev_attrs,
+};
+
+static struct attribute *mhi_dev_soc_reset_attrs[] = {
+	&dev_attr_mhi_soc_reset.attr,
+	NULL,
+};
+
+static umode_t mhi_soc_reset_attrs_are_visible(struct kobject *kobj,
+					   struct attribute *a, int n)
+{
+	struct device *dev = kobj_to_dev(kobj);
+	struct mhi_device *mhi_dev = to_mhi_device(dev);
+	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
+
+	if (mhi_cntrl->allow_user_soc_reset)
+		return a->mode;
+
+	return 0;
+}
+
+static struct attribute_group mhi_dev_soc_reset_group = {
+	.attrs  = mhi_dev_soc_reset_attrs,
+	.is_visible = mhi_soc_reset_attrs_are_visible,
+};
+
+static const struct attribute_group *mhi_dev_groups[] = {
+	&mhi_dev_group,
+	&mhi_dev_soc_reset_group,
+	NULL,
+};
 
 int mhi_controller_setup_timesync(struct mhi_controller *mhi_cntrl,
 				  ktime_t (*time_get)(void))

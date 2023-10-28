@@ -40,6 +40,8 @@
  *		   of inband wake support (such as sdx24)
  * @auto_edl_load: Do not wait for sysfs triggers to proceed with image download
  * 		   in Emergency Download Mode
+ * @allow_user_soc_reset: Enable SYS entry to perform mhi_reset (SOC reset) to perform
+ * 		  device to reboot
  */
 struct mhi_pci_dev_info {
 	const struct mhi_controller_config *config;
@@ -51,6 +53,7 @@ struct mhi_pci_dev_info {
 	bool sideband_wake;
 	bool auto_edl_load;
 	unsigned int max_vfs;
+	bool allow_user_soc_reset;
 };
 
 #define MHI_CHANNEL_CONFIG_UL(ch_num, ch_name, elems, ev_ring, ee,	\
@@ -729,6 +732,7 @@ static struct mhi_pci_dev_info mhi_qcom_lassen_v1_info = {
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
 	.sideband_wake = false,
 	.max_vfs = ARRAY_SIZE(modem_qcom_lsn_600_vf_config),
+	.allow_user_soc_reset = true,
 };
 
 static struct mhi_pci_dev_info mhi_qcom_lassen_v2_info = {
@@ -740,6 +744,7 @@ static struct mhi_pci_dev_info mhi_qcom_lassen_v2_info = {
 	.bar_num = MHI_PCI_DEFAULT_BAR_NUM,
 	.sideband_wake = false,
 	.max_vfs = ARRAY_SIZE(modem_qcom_lsn_601_vf_config),
+	.allow_user_soc_reset = true,
 };
 
 static const struct pci_device_id mhi_pci_id_table[] = {
@@ -1085,6 +1090,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	mhi_cntrl->status_cb = mhi_pci_status_cb;
 	mhi_cntrl->runtime_get = mhi_pci_runtime_get;
 	mhi_cntrl->runtime_put = mhi_pci_runtime_put;
+
+	/* Assign reset functionalities only for PF */
+	if (!pdev->is_virtfn)
+		mhi_cntrl->allow_user_soc_reset = info->allow_user_soc_reset;
 
 	if (info->sideband_wake) {
 		mhi_cntrl->wake_get = mhi_pci_wake_get_nop;
