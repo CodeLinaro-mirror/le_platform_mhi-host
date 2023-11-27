@@ -42,6 +42,8 @@
  * 		   in Emergency Download Mode
  * @allow_user_soc_reset: Enable SYS entry to perform mhi_reset (SOC reset) to perform
  * 		  device to reboot
+ * @reset_on_driver_unbind: Set true for devices support SOC reset and perform it when
+ * 		     unbinding driver
  */
 struct mhi_pci_dev_info {
 	const struct mhi_controller_config *config;
@@ -54,6 +56,7 @@ struct mhi_pci_dev_info {
 	bool auto_edl_load;
 	unsigned int max_vfs;
 	bool allow_user_soc_reset;
+	bool reset_on_driver_unbind;
 };
 
 #define MHI_CHANNEL_CONFIG_UL(ch_num, ch_name, elems, ev_ring, ee,	\
@@ -733,6 +736,7 @@ static struct mhi_pci_dev_info mhi_qcom_lassen_v1_info = {
 	.sideband_wake = false,
 	.max_vfs = ARRAY_SIZE(modem_qcom_lsn_600_vf_config),
 	.allow_user_soc_reset = true,
+	.reset_on_driver_unbind = true,
 };
 
 static struct mhi_pci_dev_info mhi_qcom_lassen_v2_info = {
@@ -745,6 +749,7 @@ static struct mhi_pci_dev_info mhi_qcom_lassen_v2_info = {
 	.sideband_wake = false,
 	.max_vfs = ARRAY_SIZE(modem_qcom_lsn_601_vf_config),
 	.allow_user_soc_reset = true,
+	.reset_on_driver_unbind = true,
 };
 
 static const struct pci_device_id mhi_pci_id_table[] = {
@@ -1092,8 +1097,10 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	mhi_cntrl->runtime_put = mhi_pci_runtime_put;
 
 	/* Assign reset functionalities only for PF */
-	if (!pdev->is_virtfn)
+	if (!pdev->is_virtfn) {
 		mhi_cntrl->allow_user_soc_reset = info->allow_user_soc_reset;
+		mhi_cntrl->reset_on_driver_unbind = info->reset_on_driver_unbind;
+	}
 
 	if (info->sideband_wake) {
 		mhi_cntrl->wake_get = mhi_pci_wake_get_nop;
@@ -1196,7 +1203,7 @@ err_disable_reporting:
 	return err;
 }
 
-static void mhi_pci_remove(struct pci_dev *pdev)
+static void mhi_pci_resource_deinit( struct pci_dev *pdev)
 {
 	struct mhi_pci_device *mhi_pdev = pci_get_drvdata(pdev);
 	struct mhi_controller *mhi_cntrl = &mhi_pdev->mhi_cntrl;
@@ -1213,13 +1220,36 @@ static void mhi_pci_remove(struct pci_dev *pdev)
 	if (pci_pme_capable(pdev, PCI_D3hot))
 		pm_runtime_get_noresume(&pdev->dev);
 
+}
+
+static void mhi_pci_remove(struct pci_dev *pdev)
+{
+	struct mhi_pci_device *mhi_pdev = pci_get_drvdata(pdev);
+	struct mhi_controller *mhi_cntrl = &mhi_pdev->mhi_cntrl;
+
+	mhi_pci_resource_deinit(pdev);
+
+	pci_disable_sriov(pdev);
+
+	if (mhi_cntrl->reset_on_driver_unbind) {
+		dev_dbg(&pdev->dev, "perform SOC reset\n");
+		mhi_soc_reset(mhi_cntrl);
+	}
+
 	mhi_unregister_controller(mhi_cntrl);
 	pci_disable_pcie_error_reporting(pdev);
 }
 
 static void mhi_pci_shutdown(struct pci_dev *pdev)
 {
-	mhi_pci_remove(pdev);
+	struct mhi_pci_device *mhi_pdev = pci_get_drvdata(pdev);
+	struct mhi_controller *mhi_cntrl = &mhi_pdev->mhi_cntrl;
+
+	mhi_pci_resource_deinit(pdev);
+
+	mhi_unregister_controller(mhi_cntrl);
+	pci_disable_pcie_error_reporting(pdev);
+
 	pci_set_power_state(pdev, PCI_D3hot);
 }
 

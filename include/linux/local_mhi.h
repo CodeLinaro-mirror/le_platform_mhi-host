@@ -405,6 +405,7 @@ struct mhi_timesync {
  * @debug_events: dumps event ring elements form debugfs directory
  * @allow_user_soc_reset: Allow user to perform SOC reset of endpoint using
  *                        sysfs entry
+ * @reset_on_driver_unbind: to perform SOC reset at driver remove
  *
  * Fields marked as (required) need to be populated by the controller driver
  * before calling mhi_register_controller(). For the fields marked as (optional)
@@ -523,6 +524,7 @@ struct mhi_controller {
 	bool wake_set;
 	unsigned long irq_flags;
 	bool allow_user_soc_reset;
+	bool reset_on_driver_unbind;
 };
 
 /**
