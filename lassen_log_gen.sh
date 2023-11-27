@@ -2,7 +2,7 @@
 ADB=/usr/bin/adb
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 sudo rm eomloglane.txt
-DEVICES=`ls /sys/bus/mhi/devices/ -l | grep mhi._IP_SW1 | wc -l`
+DEVICES=`ls /sys/bus/mhi/devices/ -l | grep -w  mhi._IP_SW1 | wc -l`
 
 DEVICES=$((DEVICES-1))
 for (( j = 0; j <= $DEVICES; j++))
