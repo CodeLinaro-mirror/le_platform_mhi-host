@@ -253,6 +253,33 @@ static const struct mhi_channel_config modem_qcom_v1_mhi_channels[] = {
 	MHI_CHANNEL_CONFIG_HW_DL(102, "IP_HW_ADPL", 128, 6),
 };
 
+static const struct mhi_channel_config modem_qcom_v2_mhi_channels[] = {
+	MHI_CHANNEL_CONFIG_UL(0, "LOOPBACK", 32, 1),
+	MHI_CHANNEL_CONFIG_DL(1, "LOOPBACK", 32, 1),
+	MHI_CHANNEL_CONFIG_UL_SBL(2, "SAHARA", 64, 1),
+	MHI_CHANNEL_CONFIG_DL_SBL(3, "SAHARA", 64, 1),
+	MHI_CHANNEL_CONFIG_UL(4, "DIAG", 16, 2),
+	MHI_CHANNEL_CONFIG_DL(5, "DIAG", 16, 2),
+	MHI_CHANNEL_CONFIG_UL(12, "MBIM", 4, 0),
+	MHI_CHANNEL_CONFIG_DL(13, "MBIM", 4, 0),
+	MHI_CHANNEL_CONFIG_UL(14, "QMI", 4, 0),
+	MHI_CHANNEL_CONFIG_DL(15, "QMI", 4, 0),
+	MHI_CHANNEL_CONFIG_UL(18, "IP_CTRL", 8, 1),
+	MHI_CHANNEL_CONFIG_DL(19, "IP_CTRL", 8, 1),
+	MHI_CHANNEL_CONFIG_UL(20, "IPCR", 32, 3),
+	MHI_CHANNEL_CONFIG_DL(21, "IPCR", 32, 3),
+	MHI_CHANNEL_CONFIG_UL(32, "DUN", 32, 3),
+	MHI_CHANNEL_CONFIG_DL(33, "DUN", 32, 3),
+	MHI_CHANNEL_CONFIG_UL_FP(34, "FIREHOSE", 32, 1),
+	MHI_CHANNEL_CONFIG_DL_FP(35, "FIREHOSE", 32, 1),
+	MHI_CHANNEL_CONFIG_UL(46, "IP_SW0", 64, 1),
+	MHI_CHANNEL_CONFIG_DL(47, "IP_SW0", 64, 1),
+	MHI_CHANNEL_CONFIG_HW_UL(100, "IP_HW0", 512, 4),
+	MHI_CHANNEL_CONFIG_HW_DL(101, "IP_HW0", 512, 5),
+	MHI_CHANNEL_CONFIG_HW_DL(102, "IP_HW_ADPL", 128, 6),
+	MHI_CHANNEL_CONFIG_HW_DL(103, "QDSS", 128, 7),
+};
+
 static struct mhi_event_config modem_qcom_v1_mhi_events[] = {
 	/* first ring is control+data ring */
 	MHI_EVENT_CONFIG_CTRL(0, 64),
@@ -266,14 +293,28 @@ static struct mhi_event_config modem_qcom_v1_mhi_events[] = {
 	MHI_EVENT_CONFIG_HW_DATA(6, 1024, 102, MHI_DB_BRST_DISABLE),
 };
 
+static struct mhi_event_config modem_qcom_v2_mhi_events[] = {
+	/* first ring is control+data ring */
+	MHI_EVENT_CONFIG_CTRL(0, 64),
+	MHI_EVENT_CONFIG_DATA(1, 256),
+	/* DIAG dedicated event ring */
+	MHI_EVENT_CONFIG_DATA(2, 64),
+	MHI_EVENT_CONFIG_DATA(3, 64),
+	/* Hardware channels request dedicated hardware event rings */
+	MHI_EVENT_CONFIG_HW_DATA(4, 1024, 100, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(5, 2048, 101, MHI_DB_BRST_ENABLE),
+	MHI_EVENT_CONFIG_HW_DATA(6, 1024, 102, MHI_DB_BRST_DISABLE),
+	MHI_EVENT_CONFIG_HW_DATA(7, 1024, 103, MHI_DB_BRST_ENABLE),
+};
+
 static const struct mhi_controller_config modem_qcom_v2_mhiv_config = {
 	.max_channels = 128,
 	.timeout_ms = 8000,
 	.ready_timeout_ms = 50000,
-	.num_channels = ARRAY_SIZE(modem_qcom_v1_mhi_channels),
-	.ch_cfg = modem_qcom_v1_mhi_channels,
-	.num_events = ARRAY_SIZE(modem_qcom_v1_mhi_events),
-	.event_cfg = modem_qcom_v1_mhi_events,
+	.num_channels = ARRAY_SIZE(modem_qcom_v2_mhi_channels),
+	.ch_cfg = modem_qcom_v2_mhi_channels,
+	.num_events = ARRAY_SIZE(modem_qcom_v2_mhi_events),
+	.event_cfg = modem_qcom_v2_mhi_events,
 };
 
 static const struct mhi_controller_config modem_qcom_v1_mhiv_config = {
