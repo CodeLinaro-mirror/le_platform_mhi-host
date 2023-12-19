@@ -12,8 +12,6 @@ do
         $ADB connect $DEVICE_ID
         mkdir -p $FOLDER
 
-				sudo mkdir -m 777 $FOLDER/positive_sequence
-				sudo mkdir -m 777 $FOLDER/negative_sequence
 				sudo mkdir -m 777 $FOLDER/positive_sequence_logs
 				sudo mkdir -m 777 $FOLDER/negative_sequence_logs
 				sudo chmod -R 777 DEVICE_$j
