@@ -190,6 +190,12 @@ int mhi_ready_state_transition(struct mhi_controller *mhi_cntrl)
 		return -EIO;
 	}
 
+	if ((mhi_cntrl->pm_state == MHI_PM_M0) &&
+		(mhi_cntrl->dev_state == MHI_STATE_M0)) {
+		dev_err(dev, "Device is already in M0 state\n");
+		return 0;
+	}
+
 	/* Wait for RESET to be cleared and READY bit to be set by the device */
 	ret = mhi_poll_reg_field(mhi_cntrl, mhi_cntrl->regs, MHICTRL,
 				 MHICTRL_RESET_MASK, MHICTRL_RESET_SHIFT, 0,
