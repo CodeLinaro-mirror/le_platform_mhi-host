@@ -830,6 +830,13 @@ int mhi_init_mmio(struct mhi_controller *mhi_cntrl)
 	ret = mhi_init_tsc_timesync(mhi_cntrl);
 	if (ret)
 		dev_err(dev, "TSC Time synchronization setup failure\n");
+
+	/* save hardware info from BHI */
+	ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, BHI_SERIALNU,
+			   &mhi_cntrl->serial_number);
+	if (ret)
+		dev_err(dev, "Could not capture serial number via BHI\n");
+
 	return 0;
 }
 
@@ -1462,12 +1469,6 @@ int mhi_prepare_for_power_up(struct mhi_controller *mhi_cntrl)
 	}
 
 	mutex_unlock(&mhi_cntrl->pm_mutex);
-
-	/* save hardware info from BHI */
-	ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, BHI_SERIALNU,
-			   &mhi_cntrl->serial_number);
-	if (ret)
-		dev_err(dev, "Could not capture serial number via BHI\n");
 
 	for (i = 0; i < ARRAY_SIZE(mhi_cntrl->oem_pk_hash); i++) {
 		ret = mhi_read_reg(mhi_cntrl, mhi_cntrl->bhi, BHI_OEMPKHASH(i),
