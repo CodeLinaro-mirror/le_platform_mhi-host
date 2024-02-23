@@ -1302,6 +1302,13 @@ static int verity_parse_opt_args(struct dm_arg_set *as, struct dm_verity *v,
 			 * properly parse all options (and their extra args).
 			 */
 			continue;
+		} else if (verity_verify_is_hex_sig_opt_arg(arg_name)) {
+			r = verity_verify_hex_sig_parse_opt_args(as, v,
+					     verify_args,
+					     &argc, arg_name);
+			if (r)
+				return r;
+			continue;
 		}
 
 		DMERR("Unrecognized verity feature request: %s", arg_name);

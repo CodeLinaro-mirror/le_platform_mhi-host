@@ -34,6 +34,11 @@ bool verity_verify_is_sig_opt_arg(const char *arg_name)
 	return (!strcasecmp(arg_name,
 			    DM_VERITY_ROOT_HASH_VERIFICATION_OPT_SIG_KEY));
 }
+bool verity_verify_is_hex_sig_opt_arg(const char *arg_name)
+{
+	return (!strcasecmp(arg_name,
+			DM_VERITY_ROOT_HASH_VERIFICATION_OPT_HEX_SIG_KEY));
+}
 
 static int verity_verify_get_sig_from_key(const char *key_desc,
 					struct dm_verity_sig_opts *sig_opts)
@@ -67,6 +72,35 @@ static int verity_verify_get_sig_from_key(const char *key_desc,
 end:
 	up_read(&key->sem);
 	key_put(key);
+
+	return ret;
+}
+
+static int verity_verify_get_sig_from_hex(const char *key_desc,
+			struct dm_verity_sig_opts *sig_opts)
+{
+	int ret = 0, i = 0, j = 0;
+	uint8_t byte[3] = {0x00, 0x00, 0x00};
+	long result;
+
+	sig_opts->sig = kmalloc(strlen(key_desc)/2, GFP_KERNEL);
+	if (!sig_opts->sig) {
+		ret = -ENOMEM;
+		goto end;
+	}
+
+	sig_opts->sig_size = strlen(key_desc)/2;
+
+	for(i = 0, j = 0; i < strlen(key_desc)-1; i+=2, j+=1){
+		byte[0] = key_desc[i];
+		byte[1] = key_desc[i+1];
+		ret = kstrtol(byte, 16, &result);
+		if (ret)
+			goto end;
+		sig_opts->sig[j] = result;
+	}
+
+end:
 
 	return ret;
 }
@@ -108,6 +142,36 @@ int verity_verify_sig_parse_opt_args(struct dm_arg_set *as,
 
 	return 0;
 }
+
+int verity_verify_hex_sig_parse_opt_args(struct dm_arg_set *as,
+			struct dm_verity *v,
+			struct dm_verity_sig_opts *sig_opts,
+			unsigned int *argc,
+			const char *arg_name)
+{
+	struct dm_target *ti = v->ti;
+	int ret = 0;
+	const char *sig_key = NULL;
+
+	if (!*argc) {
+		ti->error = DM_VERITY_VERIFY_ERR("Signature key not specified");
+		return -EINVAL;
+	}
+
+	sig_key = dm_shift_arg(as);
+	(*argc)--;
+
+	ret = verity_verify_get_sig_from_hex(sig_key, sig_opts);
+	if (ret < 0)
+		ti->error = DM_VERITY_VERIFY_ERR("Invalid key specified");
+
+	v->signature_key_desc = kstrdup(sig_key, GFP_KERNEL);
+	if (!v->signature_key_desc)
+		return -ENOMEM;
+
+	return ret;
+}
+
 
 /*
  * verify_verify_roothash - Verify the root hash of the verity hash device
