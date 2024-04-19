@@ -870,6 +870,26 @@ end_process_rsc_event:
 	return 0;
 }
 
+static void mhi_process_channel_error(struct mhi_controller *mhi_cntrl)
+{
+	struct mhi_chan *mhi_chan;
+	struct mhi_chan_ctxt *chan_ctxt;
+	struct mhi_device *mhi_dev;
+	int i;
+
+	mhi_chan = mhi_cntrl->mhi_chan;
+	for (i = 0; i < mhi_cntrl->max_chan; i++, mhi_chan++) {
+		chan_ctxt = &mhi_cntrl->mhi_ctxt->chan_ctxt[mhi_chan->chan];
+		if ((chan_ctxt->chcfg & CHAN_CTX_CHSTATE_MASK) == MHI_CH_STATE_ERROR) {
+			dev_err(&mhi_cntrl->mhi_dev->dev,
+				"ch_id:%d is moved to error state by device", mhi_chan->chan);
+			mhi_dev = mhi_chan->mhi_dev;
+			if (mhi_dev)
+				mhi_notify(mhi_dev, MHI_CB_CHANNEL_ERROR);
+		}
+	}
+}
+
 static void mhi_process_cmd_completion(struct mhi_controller *mhi_cntrl,
 				       struct mhi_tre *tre)
 {
@@ -1032,6 +1052,9 @@ int mhi_process_ctrl_ev_ring(struct mhi_controller *mhi_cntrl,
 
 			break;
 		}
+		case MHI_PKT_TYPE_CH_ERROR_EVENT:
+			mhi_process_channel_error(mhi_cntrl);
+			break;
 		case MHI_PKT_TYPE_TX_EVENT:
 			chan = MHI_TRE_GET_EV_CHID(local_rp);
 
