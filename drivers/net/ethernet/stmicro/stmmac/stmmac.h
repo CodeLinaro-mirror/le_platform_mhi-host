@@ -67,6 +67,7 @@ struct stmmac_tx_queue {
 	struct stmmac_tx_info *tx_skbuff_dma;
 	unsigned int cur_tx;
 	unsigned int dirty_tx;
+	unsigned int tx_count_frames;
 	dma_addr_t dma_tx_phy;
 	u32 tx_tail_addr;
 	bool skip_sw;

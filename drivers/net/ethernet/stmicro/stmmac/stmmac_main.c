@@ -3385,6 +3385,8 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 	unsigned int enh_desc;
 	unsigned int des, int_mod;
 	unsigned int eth_type;
+	int tx_packets = 0;
+	bool set_ic = false;
 
 	trace_stmmac_xmit_entry(queue);
 	GET_ETH_TYPE(skb->data, eth_type);
@@ -3537,12 +3539,19 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 	 * This approach takes care about the fragments: desc is the first
 	 * element in case of no SG.
 	 */
+	tx_packets = tx_q->cur_tx - first_entry;
+	tx_q->tx_count_frames += tx_packets;
 	if (likely(priv->tx_coal_timer_disable)) {
 		if (priv->plat->get_plat_tx_coal_frames) {
 			int_mod = priv->plat->get_plat_tx_coal_frames(skb);
-
-			if (!(tx_q->cur_tx % int_mod)) {
-				priv->tx_count_frames = 0;
+			if (tx_packets > int_mod)
+				set_ic = true;
+			else if ((tx_q->tx_count_frames % int_mod) < tx_packets)
+				set_ic = true;
+			else
+				set_ic = false;
+			if (set_ic) {
+				tx_q->tx_count_frames = 0;
 				priv->hw->desc->set_tx_ic(desc);
 				priv->xstats.tx_set_ic_bit++;
 			}
@@ -3553,7 +3562,7 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
 				&priv->txtimer,
 				STMMAC_COAL_TIMER(priv->tx_coal_timer));
 		} else {
-			priv->tx_count_frames = 0;
+			tx_q->tx_count_frames = 0;
 			priv->hw->desc->set_tx_ic(desc);
 			priv->xstats.tx_set_ic_bit++;
 		}
