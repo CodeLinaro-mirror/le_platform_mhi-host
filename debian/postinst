@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ "$1" = "configure" ]; then
+    dkms remove -m mhi-host -v 1.0 --all
+    dkms add -m mhi-host -v 1.0
+    dkms build -m mhi-host -v 1.0
+    dkms install -m mhi-host -v 1.0
+    modprobe mhi
+    modprobe wwan
+    modprobe wwan_mhi
+    modprobe mhi_ptp
+    modprobe mhi_uci
+    modprobe mhi_net
+    modprobe mhi_pci
+fi

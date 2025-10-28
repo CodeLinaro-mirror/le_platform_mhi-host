@@ -1,0 +1,19 @@
+/*
+ * This package generates debian package with mhi-host modules with dkms support
+ * and install modules
+ * copy udev rules in /etc/
+ **/
+
+steps to run package
+cd ../
+
+/* steps to cretae debian package*/
+dpkg-buildpackage -us -uc -rfakeroot -sa -F
+(or)
+dpkg-buildpackage -us -uc
+
+deb packaage is generated in {$base-dir}/../
+
+#install modules
+sudo dpkg -i <mhi-host_1.0*.deb>
+sudo dpkg -r mhi_host

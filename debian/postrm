@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Remove modules individually, ignoring errors if not loaded
+for module in wwan_mhi wwan mhi_net mhi_uci mhi_ptp wwan_mhi wwan mhi_pci mhi; do
+    rmmod  "$module" 2>/dev/null || true
+done
+
+sudo dkms remove mhi-host/1.0 --all
+
+sudo rm -rf /var/lib/dkms/mhi-host
+rm -rf /usr/src/mhi-host-1.0
+
+#Remove udev rules
+rm -rf /etc/udev/rules.d/99-mhi-*.rules

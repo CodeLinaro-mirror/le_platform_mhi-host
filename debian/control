@@ -1,0 +1,12 @@
+Source: mhi-host
+Maintainer: Vivek Pernamitta <vpernami@qti.qualcomm.com>
+Build-Depends: debhelper-compat (= 12)
+Standards-Version: 4.5.0
+Section: utils
+Priority: optional
+
+Package: mhi-host
+Architecture: all
+Depends: dkms
+Description: debian package for mhi-host
+ This package installs mhi-host drivers.

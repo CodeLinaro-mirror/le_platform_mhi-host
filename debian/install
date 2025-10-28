@@ -1,0 +1,4 @@
+debian/Makefile usr/src/mhi-host-1.0/
+drivers/ usr/src/mhi-host-1.0/
+include/ usr/src/mhi-host-1.0/
+build/*.rules etc/udev/rules.d/

@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with dkms
+
+#override_dh_auto_install:
+#	cp -r drivers $(DESTDIR)/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}/
