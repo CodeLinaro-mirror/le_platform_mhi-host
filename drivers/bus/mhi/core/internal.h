@@ -8,6 +8,7 @@
 #define _MHI_INT_H
 
 #include <linux/mhi.h>
+#include <linux/version.h>
 
 extern struct bus_type mhi_bus_type;
 
@@ -487,7 +488,13 @@ enum mhi_pm_state {
 #define PRIMARY_CMD_RING		0
 #define MHI_DEV_WAKE_DB			127
 #define MHI_EDL_DB			91
-#define MHI_RANDOM_U32_NONZERO(bmsk)	(prandom_u32_max(bmsk) + 1)
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0))
+	#include <linux/random.h>
+	#define MHI_RANDOM_U32_NONZERO(bmsk)	(get_random_u32_inclusive(1, bmsk))
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0))
+	#define MHI_RANDOM_U32_NONZERO(bmsk)	(prandom_u32_max(bmsk) + 1)
+#endif
 
 /* MHI Timesync offsets */
 #define TIMESYNC_TIME_LOW_OFFSET (0x8)

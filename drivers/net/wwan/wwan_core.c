@@ -21,7 +21,9 @@
 static DEFINE_MUTEX(wwan_register_lock); /* WWAN device create|remove lock */
 static DEFINE_IDA(minors); /* minors for WWAN port chardevs */
 static DEFINE_IDA(wwan_dev_ids); /* for unique WWAN device IDs */
-static struct class *wwan_class;
+static const struct class wwan_class = {
+	.name = "wwan",
+};
 static int wwan_major;
 
 #define to_wwan_dev(d) container_of(d, struct wwan_device, dev)
@@ -104,7 +106,7 @@ static struct wwan_device *wwan_dev_get_by_parent(struct device *parent)
 {
 	struct device *dev;
 
-	dev = class_find_device(wwan_class, NULL, parent, wwan_dev_parent_match);
+	dev = class_find_device(&wwan_class, NULL, parent, wwan_dev_parent_match);
 	if (!dev)
 		return ERR_PTR(-ENODEV);
 
@@ -143,7 +145,7 @@ static struct wwan_device *wwan_create_dev(struct device *parent)
 	}
 
 	wwandev->dev.parent = parent;
-	wwandev->dev.class = wwan_class;
+	wwandev->dev.class = &wwan_class;
 	wwandev->dev.type = &wwan_dev_type;
 	wwandev->id = id;
 	dev_set_name(&wwandev->dev, "wwan%d", wwandev->id);
@@ -162,7 +164,7 @@ done_unlock:
 
 static int is_wwan_child(struct device *dev, void *data)
 {
-	return dev->class == wwan_class;
+	return dev->class == &wwan_class;
 }
 
 static void wwan_remove_dev(struct wwan_device *wwandev)
@@ -237,7 +239,7 @@ static struct wwan_port *wwan_port_get_by_minor(unsigned int minor)
 {
 	struct device *dev;
 
-	dev = class_find_device(wwan_class, NULL, &minor, wwan_port_minor_match);
+	dev = class_find_device(&wwan_class, NULL, &minor, wwan_port_minor_match);
 	if (!dev)
 		return ERR_PTR(-ENODEV);
 
@@ -247,6 +249,7 @@ static struct wwan_port *wwan_port_get_by_minor(unsigned int minor)
 struct wwan_port *wwan_create_port(struct device *parent,
 				   enum wwan_port_type type,
 				   const struct wwan_port_ops *ops,
+				   struct wwan_port_caps *caps,
 				   void *drvdata)
 {
 	struct wwan_device *wwandev;
@@ -282,7 +285,7 @@ struct wwan_port *wwan_create_port(struct device *parent,
 	init_waitqueue_head(&port->waitqueue);
 
 	port->dev.parent = &wwandev->dev;
-	port->dev.class = wwan_class;
+	port->dev.class = &wwan_class;
 	port->dev.type = &wwan_port_dev_type;
 	port->dev.devt = MKDEV(wwan_major, minor);
 	dev_set_drvdata(&port->dev, drvdata);
@@ -408,6 +411,7 @@ out_unlock:
 	return ret;
 }
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0))
 static long wwan_port_op_ioctl(struct wwan_port *port, unsigned int cmd,
 			       unsigned long arg)
 {
@@ -444,6 +448,7 @@ out_unlock:
 
 	return ret;
 }
+#endif
 
 static bool is_read_blocked(struct wwan_port *port)
 {
@@ -602,12 +607,15 @@ static __poll_t wwan_port_fops_poll(struct file *filp, poll_table *wait)
 		mask |= EPOLLIN | EPOLLRDNORM;
 	if (!port->ops)
 		mask |= EPOLLHUP | EPOLLERR;
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0))
 	if (wwan_port_op_tiocm(port))
 		mask |= EPOLLPRI;
+#endif
 
 	return mask;
 }
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0))
 static long wwan_port_ioctl(struct file *filp, unsigned int cmd,
 			    unsigned long arg)
 {
@@ -615,6 +623,7 @@ static long wwan_port_ioctl(struct file *filp, unsigned int cmd,
 
 	return wwan_port_op_ioctl(port, cmd, arg);
 }
+#endif
 
 static int wwan_port_fops_flush(struct file *filp, fl_owner_t id)
 {
@@ -641,19 +650,22 @@ static const struct file_operations wwan_port_fops = {
 	.poll = wwan_port_fops_poll,
 	.flush = wwan_port_fops_flush,
 	.llseek = noop_llseek,
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0))
 	.unlocked_ioctl = wwan_port_ioctl,
+#endif
 };
 
 static int __init wwan_init(void)
 {
-	wwan_class = class_create(THIS_MODULE, "wwan");
-	if (IS_ERR(wwan_class))
-		return PTR_ERR(wwan_class);
+	int err;
+	err = class_register(&wwan_class);
+	if (err)
+		return err;
 
 	/* chrdev used for wwan ports */
 	wwan_major = register_chrdev(0, "wwan_port", &wwan_port_fops);
 	if (wwan_major < 0) {
-		class_destroy(wwan_class);
+		class_unregister(&wwan_class);
 		return wwan_major;
 	}
 
@@ -663,7 +675,7 @@ static int __init wwan_init(void)
 static void __exit wwan_exit(void)
 {
 	unregister_chrdev(wwan_major, "wwan_port");
-	class_destroy(wwan_class);
+	class_unregister(&wwan_class);
 }
 
 module_init(wwan_init);

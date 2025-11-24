@@ -7,6 +7,7 @@
 #include <linux/module.h>
 #include <linux/termios.h>
 #include <linux/wwan.h>
+#include <linux/version.h>
 
 /* MHI wwan flags */
 enum mhi_wwan_flags {
@@ -180,6 +181,8 @@ static int mhi_wwan_ctrl_tx(struct wwan_port *port, struct sk_buff *skb)
 	return ret;
 }
 
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0))
+
 static long mhi_wwan_ctrl_ioctl(struct wwan_port *port, unsigned int cmd,
 				unsigned long arg)
 {
@@ -210,12 +213,15 @@ static bool mhi_wwan_ctrl_tiocm(struct wwan_port *port)
 	return mhiwwan->tiocm;
 }
 
+#endif
 static const struct wwan_port_ops wwan_pops = {
 	.start = mhi_wwan_ctrl_start,
 	.stop = mhi_wwan_ctrl_stop,
 	.tx = mhi_wwan_ctrl_tx,
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0))
 	.ioctl = mhi_wwan_ctrl_ioctl,
 	.tiocm = mhi_wwan_ctrl_tiocm,
+#endif
 };
 
 static void mhi_ul_xfer_cb(struct mhi_device *mhi_dev,
@@ -288,9 +294,14 @@ static int mhi_wwan_ctrl_probe(struct mhi_device *mhi_dev,
 
 	dev_set_drvdata(&mhi_dev->dev, mhiwwan);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,4,0))
 	/* Register as a wwan port, id->driver_data contains wwan port type */
 	port = wwan_create_port(&cntrl->mhi_dev->dev, id->driver_data,
-				&wwan_pops, mhiwwan);
+				&wwan_pops, NULL, mhiwwan);
+#else
+	port = wwan_create_port(&cntrl->mhi_dev->dev, id->driver_data,
+                                &wwan_pops, mhiwwan);
+#endif
 	if (IS_ERR(port)) {
 		kfree(mhiwwan);
 		return PTR_ERR(port);

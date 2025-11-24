@@ -6,6 +6,7 @@
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/poll.h>
+#include <linux/version.h>
 
 #define MHI_UCI_DRIVER_NAME "mhi_uci"
 #define MHI_MAX_UCI_MINORS 128
@@ -641,7 +642,11 @@ static int __init mhi_uci_init(void)
 		return ret;
 
 	uci_dev_major = ret;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,4,0))
+	uci_dev_class = class_create(MHI_UCI_DRIVER_NAME);
+#else
 	uci_dev_class = class_create(THIS_MODULE, MHI_UCI_DRIVER_NAME);
+#endif
 	if (IS_ERR(uci_dev_class)) {
 		unregister_chrdev(uci_dev_major, MHI_UCI_DRIVER_NAME);
 		return PTR_ERR(uci_dev_class);

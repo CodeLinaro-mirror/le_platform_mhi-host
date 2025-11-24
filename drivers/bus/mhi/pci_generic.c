@@ -17,6 +17,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
+#include <linux/version.h>
 
 #define LASSEN_V1_DEVICE_ID 0x600
 #define LASSEN_V2_DEVICE_ID 0x601
@@ -877,15 +878,9 @@ static int mhi_pci_claim(struct mhi_controller *mhi_cntrl,
 	mhi_cntrl->regs = pcim_iomap_table(pdev)[bar_num];
 	mhi_cntrl->reg_len = pci_resource_len(pdev, bar_num);
 
-	err = pci_set_dma_mask(pdev, dma_mask);
+	err = dma_set_mask_and_coherent(&pdev->dev, dma_mask);
 	if (err) {
-		dev_err(&pdev->dev, "Cannot set proper DMA mask\n");
-		return err;
-	}
-
-	err = pci_set_consistent_dma_mask(pdev, dma_mask);
-	if (err) {
-		dev_err(&pdev->dev, "set consistent dma mask failed\n");
+		dev_err(&pdev->dev, "cannot set consistent dma mask\n");
 		return err;
 	}
 
@@ -995,7 +990,7 @@ static void mhi_pci_recovery_work(struct work_struct *work)
 	if (err)
 		goto err_unprepare;
 
-	dev_dbg(&pdev->dev, "Recovery completed\n");
+	dev_notice(&pdev->dev, "Recovery completed\n");
 
 	set_bit(MHI_PCI_DEV_STARTED, &mhi_pdev->status);
 	mod_timer(&mhi_pdev->health_check_timer, jiffies + HEALTH_CHECK_PERIOD);
@@ -1141,7 +1136,9 @@ static int mhi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	mhi_pdev->pci_state = pci_store_saved_state(pdev);
 	pci_load_saved_state(pdev, NULL);
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,2,0))
 	pci_enable_pcie_error_reporting(pdev);
+#endif
 
 	/* call backs to pass pci bus number and VF num if SR-IOV is enabled */
 	mhi_cntrl->get_device_instance_id = mhi_pci_get_vf_num;
@@ -1211,8 +1208,9 @@ err_unregister:
 err_tsync_disable_reporting:
 	kfree(mhi_cntrl->timesync);
 err_disable_reporting:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0))
 	pci_disable_pcie_error_reporting(pdev);
-
+#endif
 	return err;
 }
 
@@ -1250,7 +1248,11 @@ static void mhi_pci_remove(struct pci_dev *pdev)
 	}
 
 	mhi_unregister_controller(mhi_cntrl);
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0))
 	pci_disable_pcie_error_reporting(pdev);
+#endif
+
 }
 
 static void mhi_pci_shutdown(struct pci_dev *pdev)
@@ -1261,7 +1263,10 @@ static void mhi_pci_shutdown(struct pci_dev *pdev)
 	mhi_pci_resource_deinit(pdev);
 
 	mhi_unregister_controller(mhi_cntrl);
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6,6,0))
 	pci_disable_pcie_error_reporting(pdev);
+#endif
 
 	pci_set_power_state(pdev, PCI_D3hot);
 }

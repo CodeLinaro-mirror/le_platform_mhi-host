@@ -6,6 +6,7 @@
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/ptp_clock_kernel.h>
+#include <linux/version.h>
 
 #define MHI_PHC_DRIVER_NAME "mhi_phc"
 #define NSEC 1000000000ULL
@@ -24,11 +25,18 @@ struct mhi_phc_dev {
 	bool enabled;
 };
 
-static int qcom_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0))
+static int qcom_ptp_adjfine(struct ptp_clock_info *ptp, long ppb)
 {
        pr_debug("%s: dummy\n", __func__);
        return 0;
 }
+#else
+static int qcom_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+       pr_debug("%s: dummy\n", __func__);
+       return 0;
+}
+#endif
 
 static int qcom_ptp_gettimex64(struct ptp_clock_info *ptp, struct timespec64 *ts,
                           struct ptp_system_timestamp *sts)
@@ -66,7 +74,13 @@ static struct ptp_clock_info qcom_ptp_clock_info = {
 	.name     = "MHI_PHC",
 	.max_adj  = 999999999,
 	.gettimex64 =  qcom_ptp_gettimex64,
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,4,0))
+	.adjfine  = qcom_ptp_adjfine,
+#else
 	.adjfreq  = qcom_ptp_adjfreq,
+#endif
+
 };
 
 /* Dummy transfer call-backs */
