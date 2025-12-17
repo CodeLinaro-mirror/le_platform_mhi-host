@@ -1,0 +1,17 @@
+linux-imx (7.0.0-1026.26) resolute; urgency=medium
+
+  * [all] Add mwifiex from lf-6.18.2-1.0.0 release
+  * [all]       Disable other than i.MX arm platforms
+  * [all]       Disable unused fs and other features
+  * [i.MX91,93] Update dts with LPM nodes
+  * [i.MX8x,9x] Enable CONFIG_CRYPTO
+  * [i.MX8x,9x] Enable CONFIG_CRYPTO_RNG
+  * [i.MX8x,9x] Enable CONFIG_DM_CRYPT
+  * [i.MX8x,9x] Enable CONFIG_IKCONFIG
+  * [i.MX8x,9x] Enable CONFIG_IKCONFIG_PROC
+  * [i.MX8x,9x] Enable CONFIG_MODULE_SIG_KEY_TYPE_RSA
+  * [i.MX8x,9x] Enable CONFIG_SCHEDSTATS
+  * [i.MX8,9x]  Enable CONFIG_SYSTEM_TRUSTED_KEYRING
+  * resolute/linux: 7.0.0-26.26
+
+ -- Ondrej Kubik <ondrej.kubik@canonical.com>  Wed, 10 Jun 2026 17:06:24 +0100
