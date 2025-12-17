@@ -665,7 +665,8 @@ static ssize_t woal_config_write(struct file *f, const char __user *buf,
 		LEAVE();
 		return -EINVAL;
 	}
-	databuf = kzalloc(tmp_count, flag);
+	/* Allocate additional byte for null-termination in case user buffer wasn't null-terminated */
+	databuf = kzalloc(tmp_count + 1, flag);
 	if (databuf == NULL) {
 		LEAVE();
 		return -ENOMEM;
