@@ -21,9 +21,15 @@
 static DEFINE_MUTEX(wwan_register_lock); /* WWAN device create|remove lock */
 static DEFINE_IDA(minors); /* minors for WWAN port chardevs */
 static DEFINE_IDA(wwan_dev_ids); /* for unique WWAN device IDs */
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 static const struct class wwan_class = {
+#else
+static struct class wwan_class = {
+#endif
 	.name = "wwan",
 };
+
 static int wwan_major;
 
 #define to_wwan_dev(d) container_of(d, struct wwan_device, dev)
@@ -246,11 +252,18 @@ static struct wwan_port *wwan_port_get_by_minor(unsigned int minor)
 	return to_wwan_port(dev);
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0))
 struct wwan_port *wwan_create_port(struct device *parent,
 				   enum wwan_port_type type,
 				   const struct wwan_port_ops *ops,
 				   struct wwan_port_caps *caps,
 				   void *drvdata)
+#else
+struct wwan_port *wwan_create_port(struct device *parent,
+				   enum wwan_port_type type,
+				   const struct wwan_port_ops *ops,
+				   void *drvdata)
+#endif
 {
 	struct wwan_device *wwandev;
 	struct wwan_port *port;
