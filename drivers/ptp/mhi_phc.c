@@ -33,6 +33,7 @@ static int qcom_ptp_adjfine(struct ptp_clock_info *ptp, long ppb)
 }
 #else
 static int qcom_ptp_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+{
        pr_debug("%s: dummy\n", __func__);
        return 0;
 }
