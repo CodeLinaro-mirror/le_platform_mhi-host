@@ -12,3 +12,5 @@ rm -rf /usr/src/mhi-host-1.0
 
 #Remove udev rules
 rm -rf /etc/udev/rules.d/99-mhi-*.rules
+
+rm -f /etc/modules-load.d/mhi-host.conf
