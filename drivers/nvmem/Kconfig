@@ -116,6 +116,17 @@ config NVMEM_IMX_OCOTP_ELE
 	  This is a driver for the On-Chip OTP Controller (OCOTP)
 	  available on i.MX SoCs which has ELE.
 
+config NVMEM_IMX_OCOTP_S400
+	tristate "i.MX On-Chip OTP support via S400 API"
+	depends on ARCH_MXC || COMPILE_TEST
+	depends on IMX_SEC_ENCLAVE
+	help
+	  This is a driver for the OCOTP fuses accessed through the S400 API
+	  of the Secure Enclave firmware.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called nvmem-imx-ocotp-s400.
+
 config NVMEM_IMX_OCOTP_SCU
 	tristate "i.MX8 SCU On-Chip OTP Controller support"
 	depends on IMX_SCU
