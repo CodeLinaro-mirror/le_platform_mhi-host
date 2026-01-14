@@ -12,6 +12,12 @@
 		status = "disabled";
 	};
 
+	hsm0: secure-enclave {
+		compatible = "fsl,imx93-se-ele-hsm";
+		mbox-names = "tx", "rx";
+		mboxes = <&s4muap 0 0>, <&s4muap 1 0>;
+	};
+
 	thermal-zones {
 		cpu-thermal {
 			polling-delay-passive = <250>;
