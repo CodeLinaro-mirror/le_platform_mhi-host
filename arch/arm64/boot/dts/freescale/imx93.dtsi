@@ -18,6 +18,11 @@
 		mboxes = <&s4muap 0 0>, <&s4muap 1 0>;
 	};
 
+	ocotp-s400 {
+		compatible = "fsl,imx93-ocotp-s400";
+		secure-enclave = <&hsm0>;
+	};
+
 	thermal-zones {
 		cpu-thermal {
 			polling-delay-passive = <250>;
