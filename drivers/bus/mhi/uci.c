@@ -291,6 +291,111 @@ done:
 	return mask;
 }
 
+static int mhi_uci_write_xfer(struct uci_dev *udev,
+				    const char __user **bufp,
+				    size_t *countp,
+				    int *nr_descp,
+				    size_t *bytes_xferedp)
+{
+	struct mhi_device *mhi_dev = udev->mhi_dev;
+	size_t xfer_size;
+	void *kbuf;
+	enum mhi_flags flags;
+	int ret;
+
+	xfer_size = min_t(size_t, *countp, udev->mtu);
+
+	kbuf = kmalloc(xfer_size, GFP_KERNEL);
+	if (!kbuf)
+		return -ENOMEM;
+
+	ret = copy_from_user(kbuf, *bufp, xfer_size);
+	if (ret) {
+		kfree(kbuf);
+		return -EFAULT;
+	}
+
+	if (*nr_descp > 1 && (*countp - xfer_size))
+		flags = MHI_CHAIN;
+	else
+		flags = MHI_EOT;
+
+	ret = mhi_queue_buf(mhi_dev, DMA_TO_DEVICE, kbuf, xfer_size, flags);
+	if (ret) {
+		kfree(kbuf);
+		return ret;
+	}
+
+	*bytes_xferedp += xfer_size;
+	*countp -= xfer_size;
+	*bufp += xfer_size;
+	(*nr_descp)--;
+
+	return 0;
+}
+
+static ssize_t mhi_uci_write_nonblocking(struct uci_dev *udev,
+				      const char __user *buf,
+				      size_t count)
+{
+	struct mhi_device *mhi_dev = udev->mhi_dev;
+	struct device *dev = &mhi_dev->dev;
+	size_t bytes_xfered = 0;
+	int nr_desc;
+	int ret = 0;
+
+	nr_desc = mhi_get_free_desc_count(mhi_dev, DMA_TO_DEVICE);
+	if (!nr_desc)
+		return -EAGAIN;
+
+	while (count && nr_desc) {
+		ret = mhi_uci_write_xfer(udev, &buf, &count, &nr_desc, &bytes_xfered);
+		if (ret)
+			goto out;
+	}
+
+out:
+	dev_dbg(dev, "%s: nonblock bytes xferred: %zu\n", __func__, bytes_xfered);
+
+	return bytes_xfered ? (ssize_t)bytes_xfered : ret;
+}
+
+static ssize_t mhi_uci_write_blocking(struct uci_dev *udev,
+				      const char __user *buf,
+				      size_t count)
+{
+	struct mhi_device *mhi_dev = udev->mhi_dev;
+	struct device *dev = &mhi_dev->dev;
+	int ret = 0, nr_desc = 0;
+	size_t bytes_xfered = 0;
+
+	while (count) {
+
+		ret = wait_event_interruptible(udev->uchan->ul_wq,
+					       (!udev->enabled) ||
+					       (nr_desc = mhi_get_free_desc_count(mhi_dev, DMA_TO_DEVICE)) > 0);
+		if (ret == -ERESTARTSYS) {
+			dev_dbg(dev, "Interrupted by a signal or device closed in %s, exiting\n",
+				__func__);
+			goto out;
+		}
+
+		if (!udev->enabled) {
+			ret = -ENODEV;
+			goto out;
+		}
+
+		ret = mhi_uci_write_xfer(udev, &buf, &count, &nr_desc, &bytes_xfered);
+		if (ret)
+			goto out;
+	}
+
+out:
+	dev_dbg(dev, "%s: blocking bytes xferred: %zu\n", __func__, bytes_xfered);
+
+	return bytes_xfered ? (ssize_t)bytes_xfered : ret;
+}
+
 static ssize_t mhi_uci_write(struct file *file,
 			     const char __user *buf,
 			     size_t count,
@@ -300,8 +405,10 @@ static ssize_t mhi_uci_write(struct file *file,
 	struct mhi_device *mhi_dev = udev->mhi_dev;
 	struct device *dev = &mhi_dev->dev;
 	struct uci_chan *uchan = udev->uchan;
-	size_t bytes_xfered = 0;
-	int ret, nr_desc = 0;
+	ssize_t ret;
+
+	if (!udev->enabled)
+		return -ENODEV;
 
 	/* if ul channel is not supported return error */
 	if (!mhi_dev->ul_chan)
@@ -315,69 +422,142 @@ static ssize_t mhi_uci_write(struct file *file,
 	if (mutex_lock_interruptible(&uchan->write_lock))
 		return -EINTR;
 
-	while (count) {
-		size_t xfer_size;
-		void *kbuf;
-		enum mhi_flags flags;
+	if (file->f_flags & O_NONBLOCK)
+		ret = mhi_uci_write_nonblocking(udev, buf, count);
+	else
+		ret = mhi_uci_write_blocking(udev, buf, count);
 
-		/* wait for free descriptors */
-		ret = wait_event_interruptible(uchan->ul_wq,
-					       (!udev->enabled) ||
-				(nr_desc = mhi_get_free_desc_count(mhi_dev,
-					       DMA_TO_DEVICE)) > 0);
+	mutex_unlock(&uchan->write_lock);
+	return ret;
+}
 
-		if (ret == -ERESTARTSYS) {
-			dev_dbg(dev, "Interrupted by a signal in %s, exiting\n",
-				__func__);
-			goto err_mtx_unlock;
+static int mhi_uci_read_xfer(struct uci_dev *udev,
+			     char __user **bufp,
+			     size_t *countp,
+			     size_t *bytes_xferedp)
+{
+	struct mhi_device *mhi_dev = udev->mhi_dev;
+	struct uci_chan *uchan = udev->uchan;
+	struct device *dev = &mhi_dev->dev;
+	struct uci_buf *ubuf;
+	size_t rx_buf_size;
+	char *ptr;
+	size_t to_copy;
+	int ret = 0;
+
+	/* Acquire a buffer to read from (if not already selected) */
+	spin_lock_bh(&uchan->dl_pending_lock);
+	if (!uchan->cur_buf) {
+		ubuf = list_first_entry_or_null(&uchan->dl_pending, struct uci_buf, node);
+		if (!ubuf) {
+			spin_unlock_bh(&uchan->dl_pending_lock);
+			return -EIO;
 		}
 
-		if (!udev->enabled) {
-			ret = -ENODEV;
-			goto err_mtx_unlock;
-		}
+		list_del(&ubuf->node);
+		uchan->cur_buf = ubuf;
+		uchan->dl_size = ubuf->len;
+		dev_dbg(dev, "Got pkt of size: %zu\n", uchan->dl_size);
+	}
+	ubuf = uchan->cur_buf;
+	spin_unlock_bh(&uchan->dl_pending_lock);
 
-		xfer_size = min_t(size_t, count, udev->mtu);
-		kbuf = kmalloc(xfer_size, GFP_KERNEL);
-		if (!kbuf) {
-			ret = -ENOMEM;
-			goto err_mtx_unlock;
-		}
+	/* Copy out as much as requested/available */
+	to_copy = min_t(size_t, *countp, uchan->dl_size);
+	ptr = ubuf->data + (ubuf->len - uchan->dl_size);
 
-		ret = copy_from_user(kbuf, buf, xfer_size);
+	ret = copy_to_user(*bufp, ptr, to_copy);
+	if (ret)
+		return -EFAULT;
+
+	dev_dbg(dev, "Copied %zu of %zu bytes\n", to_copy, uchan->dl_size);
+	uchan->dl_size -= to_copy;
+
+	/* Advance caller pointers/state */
+	*bytes_xferedp += to_copy;
+	*countp -= to_copy;
+	*bufp += to_copy;
+
+	/* If packet fully consumed, recycle buffer back to inbound ring */
+	if (!uchan->dl_size) {
+		uchan->cur_buf = NULL;
+
+		rx_buf_size = udev->mtu - sizeof(*ubuf);
+		ret = mhi_queue_buf(mhi_dev, DMA_FROM_DEVICE, ubuf->data, rx_buf_size, MHI_EOT);
 		if (ret) {
-			kfree(kbuf);
-			ret = -EFAULT;
-			goto err_mtx_unlock;
+			dev_err(dev, "Failed to recycle element: %d\n", ret);
+			kfree(ubuf->data);
+			return ret;
 		}
-
-		/* if ring is full after this force EOT */
-		if (nr_desc > 1 && (count - xfer_size))
-			flags = MHI_CHAIN;
-		else
-			flags = MHI_EOT;
-
-		ret = mhi_queue_buf(mhi_dev, DMA_TO_DEVICE, kbuf, xfer_size,
-				    flags);
-		if (ret) {
-			kfree(kbuf);
-			goto err_mtx_unlock;
-		}
-
-		bytes_xfered += xfer_size;
-		count -= xfer_size;
-		buf += xfer_size;
 	}
 
-	mutex_unlock(&uchan->write_lock);
-	dev_dbg(dev, "%s: bytes xferred: %zu\n", __func__, bytes_xfered);
+	return 0;
+}
 
-	return bytes_xfered;
+static ssize_t mhi_uci_read_nonblocking(struct uci_dev *udev,
+				     char __user *buf,
+				     size_t count)
+{
+	struct uci_chan *uchan = udev->uchan;
+	size_t remaining = count;
+	char __user *p = buf;
+	size_t copied = 0;
+	int ret;
 
-err_mtx_unlock:
-	mutex_unlock(&uchan->write_lock);
+	if (!count)
+		return 0;
 
-	return ret;
+	spin_lock_bh(&uchan->dl_pending_lock);
+	if (!uchan->cur_buf && list_empty(&uchan->dl_pending)) {
+		spin_unlock_bh(&uchan->dl_pending_lock);
+		return -EAGAIN;
+	}
+	spin_unlock_bh(&uchan->dl_pending_lock);
+
+	ret = mhi_uci_read_xfer(udev, &p, &remaining, &copied);
+	if (ret < 0)
+		return ret;
+
+	return (ssize_t)copied;
+}
+
+static ssize_t mhi_uci_read_blocking(struct uci_dev *udev,
+				     char __user *buf,
+				     size_t count)
+{
+	struct mhi_device *mhi_dev = udev->mhi_dev;
+	struct uci_chan *uchan = udev->uchan;
+	struct device *dev = &mhi_dev->dev;
+	size_t remaining = count;
+	char __user *p = buf;
+	size_t copied = 0;
+	int ret;
+
+	spin_lock_bh(&uchan->dl_pending_lock);
+	if (!uchan->cur_buf && list_empty(&uchan->dl_pending)) {
+
+		spin_unlock_bh(&uchan->dl_pending_lock);
+
+		dev_dbg(dev, "No data available to read, waiting\n");
+		ret = wait_event_interruptible(uchan->dl_wq,
+					       (!udev->enabled ||
+					      !list_empty(&uchan->dl_pending)));
+
+		if (ret == -ERESTARTSYS)
+			return ret;
+
+		if (!udev->enabled)
+			return -ENODEV;
+
+	} else {
+		spin_unlock_bh(&uchan->dl_pending_lock);
+	}
+
+	ret = mhi_uci_read_xfer(udev, &p, &remaining, &copied);
+	if (ret < 0)
+		return ret;
+
+	return (ssize_t)copied;
 }
 
 static ssize_t mhi_uci_read(struct file *file,
@@ -388,99 +568,26 @@ static ssize_t mhi_uci_read(struct file *file,
 	struct uci_dev *udev = file->private_data;
 	struct mhi_device *mhi_dev = udev->mhi_dev;
 	struct uci_chan *uchan = udev->uchan;
-	struct device *dev = &mhi_dev->dev;
-	struct uci_buf *ubuf;
-	size_t rx_buf_size;
-	char *ptr;
-	size_t to_copy;
-	int ret = 0;
+	ssize_t ret;
+
+	if (!udev->enabled)
+		return -ENODEV;
 
 	/* if dl channel is not supported return error */
 	if (!mhi_dev->dl_chan)
 		return -EOPNOTSUPP;
 
-	if (!buf)
+	if (!buf || !count)
 		return -EINVAL;
 
 	if (mutex_lock_interruptible(&uchan->read_lock))
 		return -EINTR;
 
-	spin_lock_bh(&uchan->dl_pending_lock);
-	/* No data available to read, wait */
-	if (!uchan->cur_buf && list_empty(&uchan->dl_pending)) {
-		dev_dbg(dev, "No data available to read, waiting\n");
+	if (file->f_flags & O_NONBLOCK)
+		ret = mhi_uci_read_nonblocking(udev, buf, count);
+	else
+		ret = mhi_uci_read_blocking(udev, buf, count);
 
-		spin_unlock_bh(&uchan->dl_pending_lock);
-		ret = wait_event_interruptible(uchan->dl_wq,
-					       (!udev->enabled ||
-					      !list_empty(&uchan->dl_pending)));
-
-		if (ret == -ERESTARTSYS) {
-			dev_dbg(dev, "Interrupted by a signal in %s, exiting\n",
-				__func__);
-			goto err_mtx_unlock;
-		}
-
-		if (!udev->enabled) {
-			ret = -ENODEV;
-			goto err_mtx_unlock;
-		}
-		spin_lock_bh(&uchan->dl_pending_lock);
-	}
-
-	/* new read, get the next descriptor from the list */
-	if (!uchan->cur_buf) {
-		ubuf = list_first_entry_or_null(&uchan->dl_pending,
-						struct uci_buf, node);
-		if (!ubuf) {
-			ret = -EIO;
-			goto err_spin_unlock;
-		}
-
-		list_del(&ubuf->node);
-		uchan->cur_buf = ubuf;
-		uchan->dl_size = ubuf->len;
-		dev_dbg(dev, "Got pkt of size: %zu\n", uchan->dl_size);
-	}
-	spin_unlock_bh(&uchan->dl_pending_lock);
-
-	ubuf = uchan->cur_buf;
-
-	/* Copy the buffer to user space */
-	to_copy = min_t(size_t, count, uchan->dl_size);
-	ptr = ubuf->data + (ubuf->len - uchan->dl_size);
-
-	ret = copy_to_user(buf, ptr, to_copy);
-	if (ret) {
-		ret = -EFAULT;
-		goto err_mtx_unlock;
-	}
-
-	dev_dbg(dev, "Copied %zu of %zu bytes\n", to_copy, uchan->dl_size);
-	uchan->dl_size -= to_copy;
-
-	/* we finished with this buffer, queue it back to hardware */
-	if (!uchan->dl_size) {
-		uchan->cur_buf = NULL;
-
-		rx_buf_size = udev->mtu - sizeof(*ubuf);
-		ret = mhi_queue_buf(mhi_dev, DMA_FROM_DEVICE, ubuf->data,
-				    rx_buf_size, MHI_EOT);
-		if (ret) {
-			dev_err(dev, "Failed to recycle element: %d\n", ret);
-			kfree(ubuf->data);
-			goto err_mtx_unlock;
-		}
-	}
-	mutex_unlock(&uchan->read_lock);
-
-	dev_dbg(dev, "%s: Returning %zu bytes\n", __func__, to_copy);
-
-	return to_copy;
-
-err_spin_unlock:
-	spin_unlock_bh(&uchan->dl_pending_lock);
-err_mtx_unlock:
 	mutex_unlock(&uchan->read_lock);
 	return ret;
 }
