@@ -1720,7 +1720,7 @@ void mhi_driver_unregister(struct mhi_driver *mhi_drv)
 }
 EXPORT_SYMBOL_GPL(mhi_driver_unregister);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
 	static int mhi_uevent(const struct device *dev, struct kobj_uevent_env *env)
 #else
 	static int mhi_uevent(struct device *dev, struct kobj_uevent_env *env)
