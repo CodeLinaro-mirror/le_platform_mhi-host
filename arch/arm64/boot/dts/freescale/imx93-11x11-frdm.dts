@@ -331,6 +331,11 @@
 	status = "okay";
 };
 
+&lpm {
+	soc-supply = <&buck1>;
+	status = "okay";
+};
+
 //&ldb {
 //	status = "okay";
 //
