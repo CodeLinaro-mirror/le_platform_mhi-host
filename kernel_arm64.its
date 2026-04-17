@@ -72,6 +72,19 @@
 			};
 		};
 
+		fdt-imx93-11x11-evk-ld {
+			description = "i.MX93 evk dtb with lpm";
+			data = /incbin/("./dtbs/freescale/imx93-11x11-evk-ld.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load =  <0x84000000>;
+			entry = <0x84000000>;
+			hash-1 {
+				algo = "sha256";
+			};
+		};
+
 		fdt-imx93-9x9-qsb {
 			description = "i.MX93 qsb dtb";
 			data = /incbin/("./dtbs/freescale/imx93-9x9-qsb.dtb");
@@ -88,6 +101,19 @@
 		fdt-imx93-11x11-frdm {
 			description = "i.MX93 FRDM dtb";
 			data = /incbin/("./dtbs/freescale/imx93-11x11-frdm.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			load =  <0x84000000>;
+			entry = <0x84000000>;
+			hash-1 {
+				algo = "sha256";
+			};
+		};
+
+		fdt-imx93-11x11-frdm-ld {
+			description = "i.MX93 FRDM dtb with lpm";
+			data = /incbin/("./dtbs/freescale/imx93-11x11-frdm-ld.dtb");
 			type = "flat_dt";
 			arch = "arm64";
 			compression = "none";
@@ -163,6 +189,18 @@
 			};
 		};
 
+		imx93-11x11-evk.dtb-ld {
+			description = "i.MX93 evk with lpm";
+			kernel = "kernel-efi";
+			ramdisk = "ramdisk-uc";
+			fdt = "fdt-imx93-11x11-evk-ld";
+			signature-1 {
+				algo = "sha256,rsa2048";
+				key-name-hint="dev-fit-key";
+				sign-images="kernel", "fdt", "ramdisk";
+			};
+		};
+
 		imx93-9x9-qsb.dtb {
 			description = "i.MX93 qsb";
 			kernel = "kernel-efi";
@@ -180,6 +218,18 @@
 			kernel = "kernel-efi";
 			ramdisk = "ramdisk-uc";
 			fdt = "fdt-imx93-11x11-frdm";
+			signature-1 {
+				algo = "sha256,rsa2048";
+				key-name-hint="dev-fit-key";
+				sign-images="kernel", "fdt", "ramdisk";
+			};
+		};
+
+		imx93-11x11-frdm.dtb-ld {
+			description = "i.MX93 FRDM with lpm";
+			kernel = "kernel-efi";
+			ramdisk = "ramdisk-uc";
+			fdt = "fdt-imx93-11x11-frdm-ld";
 			signature-1 {
 				algo = "sha256,rsa2048";
 				key-name-hint="dev-fit-key";
