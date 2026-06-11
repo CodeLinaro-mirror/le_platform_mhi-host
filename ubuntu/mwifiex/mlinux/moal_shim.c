@@ -3783,7 +3783,7 @@ mlan_status moal_recv_event(t_void *pmoal, pmlan_event pmevent)
 			memset(wrqu.ap_addr.sa_data, 0x00, ETH_ALEN);
 			moal_memcpy_ext(priv->phandle, wrqu.ap_addr.sa_data,
 					pmevent->event_buf, ETH_ALEN,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 80)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(7, 0, 0)
 					sizeof(wrqu.ap_addr.sa_data_min));
 #else
 					sizeof(wrqu.ap_addr.sa_data));
