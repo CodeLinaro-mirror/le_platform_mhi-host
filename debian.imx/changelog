@@ -1,3 +1,9 @@
+linux-imx (7.0.0-1028.28) resolute; urgency=medium
+
+  * resolute/linux: 7.0.0-28.28
+
+ -- Ondrej Kubik <ondrej.kubik@canonical.com>  Mon, 22 Jun 2026 17:30:43 +0100
+
 linux-imx (7.0.0-1026.26) resolute; urgency=medium
 
   * [all] Add mwifiex from lf-6.18.2-1.0.0 release
