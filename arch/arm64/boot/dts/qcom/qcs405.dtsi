@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -7,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
 
@@ -28,7 +29,7 @@
 / {
 	model = "Qualcomm Technologies, Inc. QCS405";
 	compatible = "qcom,qcs405";
-	qcom,msm-id = <352 0x0>, <452 0x0>;
+	qcom,msm-id = <352 0x0>, <452 0x0>, <411 0x0>;
 	interrupt-parent = <&wakegic>;
 
 	chosen {
