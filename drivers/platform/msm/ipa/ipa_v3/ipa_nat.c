@@ -1434,6 +1434,13 @@ int ipa3_nat_init_cmd(
 		goto bail;
 	}
 
+	if (init->expn_table_entries == U16_MAX) {
+		IPAERR_RL("Expn table entries is %u\n",
+			init->expn_table_entries);
+	        result = -EPERM;
+	        goto bail;
+	}
+
 	if (!IPA_VALID_NAT_MEM_IN(nmi)) {
 		IPAERR_RL("Bad ipa3_nat_mem_in type\n");
 		result = -EPERM;
@@ -1602,9 +1609,16 @@ int ipa3_ipv6ct_init_cmd(
 		return -EPERM;
 	}
 
-	if (init->table_entries == 0) {
-		IPAERR_RL("Table entries is zero\n");
-		return -EPERM;
+	if (init->table_entries == 0 ||
+		init->table_entries == U16_MAX) {
+	        IPAERR_RL("Table entries is %u\n", init->table_entries);
+	        return -EPERM;
+	}
+
+	if (init->expn_table_entries == U16_MAX) {
+		IPAERR_RL("Expn table entries is %u\n",
+			init->expn_table_entries);
+	        return -EPERM;
 	}
 
 	if (!dev->is_mapped) {
