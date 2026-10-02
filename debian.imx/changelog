@@ -1,3 +1,9 @@
+linux-imx (7.0.0-1039.39) resolute; urgency=medium
+
+  * resolute/linux: 7.0.0-39.39
+
+ -- Ondrej Kubik <ondrej.kubik@canonical.com>  Fri, 02 Oct 2026 13:46:58 +0100
+
 linux-imx (7.0.0-1038.38) resolute; urgency=medium
 
   * resolute/linux: 7.0.0-38.38
